@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/auth"
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/middleware"
@@ -261,6 +262,17 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Gender != nil {
 		user.Gender = *req.Gender
+	}
+	if req.BirthDate != nil {
+		// Parse the date string (expected format: YYYY-MM-DD)
+		birthDate, err := time.Parse("2006-01-02", *req.BirthDate)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid birth_date format (expected YYYY-MM-DD)"})
+			return
+		}
+		user.BirthDate = &birthDate
 	}
 	if req.Bio != nil {
 		user.Bio = *req.Bio
