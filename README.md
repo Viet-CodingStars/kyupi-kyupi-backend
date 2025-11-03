@@ -1,39 +1,158 @@
-# kyupi-kyupi-backend
+# KyupiKyupi Backend
 
-Minimal Go web backend scaffold.
+KyupiKyupi is a matching application. This repository contains the Go service that handles:
 
-Quick start
+- User registration and login with bcrypt-hashed passwords
+- JWT-based session management (24-hour access tokens)
+- Authenticated profile retrieval and updates (name, age, gender, bio, interests, photo URL)
+- Account deletion endpoint (logout is handled client-side by discarding tokens)
 
-1. Build:
+The data layer is PostgreSQL, accessed through `database/sql`. Docker Compose spins up PostgreSQL (and a MongoDB container reserved for future features).
 
-  go build ./...
+---
 
-2. Run:
+## Requirements
 
-  go run ./
+Prepare the following before running KyupiKyupi locally:
 
-The server listens on :8080 and exposes:
+- Go 1.21+
+- PostgreSQL 15
+- MongoDB 6.0
+- Docker 24+ with Docker Compose v2 (recommended for local development)
+- Make (optional, offers build/test shortcuts)
 
-- GET / -> {"message": "kyupi-kyupi-backend"}
-- GET /health -> {"status": "ok"}
+---
 
-Run tests:
+## Configuration
 
-   go test ./...
+Copy the sample environment file and adjust values as needed:
 
-Environment
+```bash
+cp .env.example .env
+```
 
-This project reads configuration from environment variables. You can copy `.env.example` to `.env` for local development or export variables directly.
+Key environment variables:
 
-Important variables:
+- `APP_ENV` – `DEVELOPMENT`, `TESTING`, or `PRODUCTION` (default `DEVELOPMENT`)
+- `PORT` – HTTP port (default `8080`)
+- `LOG_LEVEL` – `debug`, `info`, `warn`, or `error`
+- `JWT_SECRET` – required; used to sign access tokens (change this in production)
+- PostgreSQL configuration (required)
+   - `POSTGRES_URL`, or
+   - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`
+   - Pooling & SSL: `POSTGRES_SSL_MODE` (default `disable`), `POSTGRES_MAX_OPEN_CONNS`, `POSTGRES_MAX_IDLE_CONNS`, `POSTGRES_CONN_MAX_LIFETIME` (Go duration format, default `30m`)
+- MongoDB configuration (required)
+   - `MONGODB_URL`, or
+   - `MONGO_HOST`, `MONGO_PORT`, `MONGO_USER`, `MONGO_PASSWORD`, `MONGO_DATABASE`, `MONGO_AUTH_SOURCE`, `MONGO_REPLICA_SET`
 
-- `APP_ENV` — one of `DEVELOPMENT`, `TESTING`, `PRODUCTION`. Defaults to `DEVELOPMENT`.
-- `PORT` — TCP port the server listens on (default `8080`).
-- `LOG_LEVEL` — `debug`, `info`, `warn`, `error` (default `info`).
-- `DATABASE_URL` — optional database connection string.
+At startup the service ensures the `users` table exists in PostgreSQL, so you do not need a separate migration step for basic usage.
 
-The project includes an `internal/config` package that loads these values and provides helpers such as `Addr()` and `IsTesting()`.
+---
 
-CI
+## Run With Docker (recommended)
 
-A GitHub Actions workflow is provided at `.github/workflows/ci.yml` and will run `go test` and `go build` on push/PR targeting `main`.
+1. Build and start the stack (API + PostgreSQL + MongoDB placeholder):
+
+   ```bash
+   docker compose up -d
+   ```
+
+2. Follow logs:
+
+   ```bash
+   docker compose logs -f app
+   ```
+
+3. Access the API at <http://localhost:8080>.
+
+4. Shut everything down:
+
+   ```bash
+   docker compose down
+   ```
+
+Persistent volumes `pgdata` and `mongodata` store database data between restarts. Use `docker compose down -v` to remove them. The API validates connections to both PostgreSQL and MongoDB during startup.
+
+---
+
+## Run Without Docker
+
+1. Preparation: Install Go, PostgreSQL and MongoDB
+
+2. Start PostgreSQL and MongoDB services, then create/verify the databases (defaults match `.env.example`). Examples:
+
+   ```bash
+   psql -h localhost -U postgres -c 'CREATE DATABASE kyupi;'
+   mongosh --eval 'db.getSiblingDB("kyupi").runCommand({ ping: 1 })'
+   ```
+
+3. Export environment variables or rely on `.env` (with tools like `direnv`).
+
+4. Install Go dependencies and start the server (startup pings both PostgreSQL and MongoDB; ensure they are reachable):
+
+   ```bash
+   go mod tidy
+   go run .
+   ```
+
+   The service listens on `PORT`, defaulting to `:8080`.
+
+4. Optional Make targets:
+
+   ```bash
+   make build   # go build -v ./...
+   make run     # go run ./
+   make test    # go test ./... -v
+   make tidy    # go mod tidy
+   ```
+
+---
+
+## API Summary
+
+Public endpoints:
+
+- `GET /` – welcome payload
+- `GET /health` – readiness probe
+- `POST /api/v1/auth/register` – sign up, returns JWT
+- `POST /api/v1/auth/login` – authenticate, returns JWT
+
+Protected endpoints (send `Authorization: Bearer <token>`):
+
+- `GET /api/v1/profile` – fetch current user profile
+- `POST /api/v1/profile/update` – update profile fields
+- `DELETE /api/v1/account` – delete the signed-in user
+
+Tokens expire after 24 hours by default. Logging out simply means discarding the token on the client.
+
+---
+
+## Testing
+
+```bash
+go test ./...
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs `go mod tidy`, `go test ./...`, and `go build ./...` on pushes and pull requests targeting `main`.
+
+---
+
+## Project Structure
+
+- `main.go` – application bootstrap, HTTP server, DB setup
+- `internal/config` – environment-driven settings
+- `internal/db` – Database connector
+- `internal/models` – domain models (e.g., `User`)
+- `internal/repo` – data access layer
+- `internal/auth` – JWT helper functions
+- `internal/middleware` – authentication middleware
+- `internal/handlers` – HTTP handlers for auth/profile/health
+- `internal/routes` – router wiring and middleware composition
+- `docker-compose.yml` – local development stack
+- `Makefile` – convenience tasks
+
+---
+
+## Contributing
+
+Bug reports, feature ideas, and pull requests are welcome. For significant changes, open an issue or discussion first so we can coordinate design decisions.

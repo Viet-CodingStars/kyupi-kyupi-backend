@@ -10,11 +10,30 @@ import (
   "time"
 
   "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/config"
+  "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/db"
   "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/routes"
 )
 
 func main() {
   cfg := config.LoadFromEnv()
+
+  pg, err := db.Connect(cfg)
+  if err != nil {
+    log.Fatalf("failed to connect to postgres: %v", err)
+  }
+  defer pg.Close()
+
+  mongoClient, err := db.ConnectMongo(cfg)
+  if err != nil {
+    log.Fatalf("failed to connect to mongo: %v", err)
+  }
+  defer func() {
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    if err := mongoClient.Disconnect(ctx); err != nil {
+      log.Printf("mongo disconnect error: %v", err)
+    }
+  }()
 
   addr := cfg.Addr()
   srv := &http.Server{

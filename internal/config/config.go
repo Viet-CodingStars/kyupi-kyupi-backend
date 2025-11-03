@@ -2,8 +2,11 @@ package config
 
 import (
   "fmt"
+  "net/url"
   "os"
+  "strconv"
   "strings"
+  "time"
 )
 
 const (
@@ -27,9 +30,18 @@ type Config struct {
   PostgresHost     string
   PostgresPort     string
   PostgresDB       string
+  PostgresSSLMode  string
+  PostgresMaxOpenConns int
+  PostgresMaxIdleConns int
+  PostgresConnMaxLifetime time.Duration
   // Mongo individual parts (used when MONGODB_URL not provided)
   MongoHost string
   MongoPort string
+  MongoUser     string
+  MongoPassword string
+  MongoDatabase string
+  MongoAuthSource string
+  MongoReplicaSet string
 }
 
 // LoadFromEnv reads configuration from environment variables and returns a Config with defaults.
@@ -76,6 +88,15 @@ func LoadFromEnv() *Config {
     pgDB = "kyupi"
   }
 
+  pgSSLMode := strings.TrimSpace(os.Getenv("POSTGRES_SSL_MODE"))
+  if pgSSLMode == "" {
+    pgSSLMode = "disable"
+  }
+
+  pgMaxOpen := parseIntEnv("POSTGRES_MAX_OPEN_CONNS", 25)
+  pgMaxIdle := parseIntEnv("POSTGRES_MAX_IDLE_CONNS", 25)
+  pgConnLife := parseDurationEnv("POSTGRES_CONN_MAX_LIFETIME", 30*time.Minute)
+
   // Mongo components (fallback host/port)
   mongoHost := strings.TrimSpace(os.Getenv("MONGO_HOST"))
   if mongoHost == "" {
@@ -85,6 +106,15 @@ func LoadFromEnv() *Config {
   if mongoPort == "" {
     mongoPort = "27017"
   }
+
+  mongoUser := strings.TrimSpace(os.Getenv("MONGO_USER"))
+  mongoPassword := strings.TrimSpace(os.Getenv("MONGO_PASSWORD"))
+  mongoDB := strings.TrimSpace(os.Getenv("MONGO_DATABASE"))
+  if mongoDB == "" {
+    mongoDB = "kyupi"
+  }
+  mongoAuthSource := strings.TrimSpace(os.Getenv("MONGO_AUTH_SOURCE"))
+  mongoReplicaSet := strings.TrimSpace(os.Getenv("MONGO_REPLICA_SET"))
 
   return &Config{
     Env:              env,
@@ -98,8 +128,17 @@ func LoadFromEnv() *Config {
     PostgresHost:     pgHost,
     PostgresPort:     pgPort,
     PostgresDB:       pgDB,
+    PostgresSSLMode:  pgSSLMode,
+    PostgresMaxOpenConns: pgMaxOpen,
+    PostgresMaxIdleConns: pgMaxIdle,
+    PostgresConnMaxLifetime: pgConnLife,
     MongoHost:        mongoHost,
     MongoPort:        mongoPort,
+    MongoUser:        mongoUser,
+    MongoPassword:    mongoPassword,
+    MongoDatabase:    mongoDB,
+    MongoAuthSource:  mongoAuthSource,
+    MongoReplicaSet:  mongoReplicaSet,
   }
 }
 
@@ -109,8 +148,26 @@ func (c *Config) PostgresDSN() string {
   if c.PostgresURL != "" {
     return c.PostgresURL
   }
-  return fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-    c.PostgresUser, c.PostgresPassword, c.PostgresHost, c.PostgresPort, c.PostgresDB)
+  u := &url.URL{
+    Scheme: "postgres",
+    Host:   fmt.Sprintf("%s:%s", c.PostgresHost, c.PostgresPort),
+    Path:   c.PostgresDB,
+  }
+  if c.PostgresUser != "" {
+    if c.PostgresPassword != "" {
+      u.User = url.UserPassword(c.PostgresUser, c.PostgresPassword)
+    } else {
+      u.User = url.User(c.PostgresUser)
+    }
+  }
+  params := url.Values{}
+  if c.PostgresSSLMode != "" {
+    params.Set("sslmode", c.PostgresSSLMode)
+  }
+  if len(params) > 0 {
+    u.RawQuery = params.Encode()
+  }
+  return u.String()
 }
 
 // MongoConn returns the MongoDB connection string. If MONGODB_URL is set it is returned;
@@ -119,7 +176,34 @@ func (c *Config) MongoConn() string {
   if c.MongoURL != "" {
     return c.MongoURL
   }
-  return fmt.Sprintf("mongodb://%s:%s", c.MongoHost, c.MongoPort)
+  creds := ""
+  if c.MongoUser != "" {
+    user := url.QueryEscape(c.MongoUser)
+    if c.MongoPassword != "" {
+      creds = fmt.Sprintf("%s:%s@", user, url.QueryEscape(c.MongoPassword))
+    } else {
+      creds = user + "@"
+    }
+  }
+  host := fmt.Sprintf("%s:%s", c.MongoHost, c.MongoPort)
+  params := url.Values{}
+  if c.MongoAuthSource != "" {
+    params.Set("authSource", c.MongoAuthSource)
+  } else if c.MongoUser != "" && c.MongoDatabase != "" {
+    params.Set("authSource", c.MongoDatabase)
+  }
+  if c.MongoReplicaSet != "" {
+    params.Set("replicaSet", c.MongoReplicaSet)
+  }
+
+  uri := fmt.Sprintf("mongodb://%s%s", creds, host)
+  if c.MongoDatabase != "" {
+    uri = fmt.Sprintf("%s/%s", uri, c.MongoDatabase)
+  }
+  if len(params) > 0 {
+    uri = fmt.Sprintf("%s?%s", uri, params.Encode())
+  }
+  return uri
 }
 
 // Addr returns a host:port address suitable for http.Server
@@ -135,3 +219,27 @@ func (c *Config) IsTesting() bool { return c.Env == EnvTesting }
 
 // IsProduction returns true when APP_ENV=PRODUCTION
 func (c *Config) IsProduction() bool { return c.Env == EnvProduction }
+
+func parseIntEnv(key string, def int) int {
+  v := strings.TrimSpace(os.Getenv(key))
+  if v == "" {
+    return def
+  }
+  i, err := strconv.Atoi(v)
+  if err != nil {
+    return def
+  }
+  return i
+}
+
+func parseDurationEnv(key string, def time.Duration) time.Duration {
+  v := strings.TrimSpace(os.Getenv(key))
+  if v == "" {
+    return def
+  }
+  d, err := time.ParseDuration(v)
+  if err != nil {
+    return def
+  }
+  return d
+}
