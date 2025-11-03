@@ -33,5 +33,33 @@ func Connect(cfg *config.Config) (*sql.DB, error) {
     db.Close()
     return nil, err
   }
+
+  // Initialize schema
+  if err := initSchema(db); err != nil {
+    db.Close()
+    return nil, err
+  }
+
   return db, nil
+}
+
+// initSchema creates the users table if it doesn't exist
+func initSchema(db *sql.DB) error {
+  schema := `
+  CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    gender VARCHAR(50),
+    birth_date DATE,
+    bio TEXT,
+    avatar_url TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+  `
+  _, err := db.Exec(schema)
+  return err
 }

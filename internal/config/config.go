@@ -20,6 +20,7 @@ type Config struct {
   Env         string // APP_ENV: DEVELOPMENT, TESTING, PRODUCTION
   Port        string // PORT, e.g. "8080"
   LogLevel    string // LOG_LEVEL: debug/info/warn/error
+  JWTSecret   string // JWT_SECRET: secret key for signing JWT tokens
   DatabaseURL string // DATABASE_URL, optional (generic)
   // Database connection URLs (preferred) or their components
   PostgresURL string // POSTGRES_URL, optional full DSN
@@ -59,6 +60,11 @@ func LoadFromEnv() *Config {
   logLevel := strings.ToLower(strings.TrimSpace(os.Getenv("LOG_LEVEL")))
   if logLevel == "" {
     logLevel = "info"
+  }
+
+  jwtSecret := strings.TrimSpace(os.Getenv("JWT_SECRET"))
+  if jwtSecret == "" {
+    jwtSecret = "default-secret-change-in-production"
   }
 
   db := strings.TrimSpace(os.Getenv("DATABASE_URL"))
@@ -120,6 +126,7 @@ func LoadFromEnv() *Config {
     Env:              env,
     Port:             port,
     LogLevel:         logLevel,
+    JWTSecret:        jwtSecret,
     DatabaseURL:      db,
     PostgresURL:      pgURL,
     MongoURL:         mongoURL,
