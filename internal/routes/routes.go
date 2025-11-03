@@ -21,8 +21,6 @@ func NewRouter(db *sql.DB, cfg *config.Config) http.Handler {
 	userHandler := handlers.NewUserHandler(db, cfg.JWTSecret)
 	
 	// Public endpoints
-	mux.HandleFunc("/api/users/sign_up", userHandler.SignUpForm)
-	mux.HandleFunc("/api/users/sign_in", userHandler.SignInForm)
 	mux.HandleFunc("POST /api/users", userHandler.SignUp)
 	mux.HandleFunc("POST /api/users/sign_in", userHandler.SignIn)
 	
@@ -30,7 +28,6 @@ func NewRouter(db *sql.DB, cfg *config.Config) http.Handler {
 	authMw := middleware.AuthMiddleware(cfg.JWTSecret)
 	
 	mux.Handle("/api/users/sign_out", authMw(http.HandlerFunc(userHandler.SignOut)))
-	mux.Handle("/api/users/edit", authMw(http.HandlerFunc(userHandler.EditProfile)))
 	
 	// Handle both GET and PATCH/PUT for /api/users
 	mux.Handle("/api/users", authMw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

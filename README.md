@@ -114,15 +114,12 @@ Public endpoints:
 
 - `GET /` – welcome payload
 - `GET /health` – readiness probe
-- `GET /api/users/sign_up` – sign up form
 - `POST /api/users` – create user account, returns JWT
-- `GET /api/users/sign_in` – sign in form
 - `POST /api/users/sign_in` – authenticate, returns JWT
 
 Protected endpoints (send `Authorization: Bearer <token>`):
 
 - `GET /api/users` – fetch current user profile
-- `GET /api/users/edit` – edit profile form
 - `PATCH /api/users` or `PUT /api/users` – update profile fields
 - `DELETE /api/users/sign_out` – sign out (client-side token discard)
 

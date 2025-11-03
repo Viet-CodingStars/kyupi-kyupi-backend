@@ -333,54 +333,6 @@ func TestGetProfile(t *testing.T) {
 	})
 }
 
-func TestSignUpForm(t *testing.T) {
-	handler := &UserHandler{
-		jwtSecret: "test-secret",
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/api/users/sign_up", nil)
-	rr := httptest.NewRecorder()
-
-	handler.SignUpForm(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rr.Code)
-	}
-
-	var response map[string]interface{}
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if response["message"] != "Sign up form" {
-		t.Fatalf("expected sign up form message, got %v", response["message"])
-	}
-}
-
-func TestSignInForm(t *testing.T) {
-	handler := &UserHandler{
-		jwtSecret: "test-secret",
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/api/users/sign_in", nil)
-	rr := httptest.NewRecorder()
-
-	handler.SignInForm(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rr.Code)
-	}
-
-	var response map[string]interface{}
-	if err := json.NewDecoder(rr.Body).Decode(&response); err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if response["message"] != "Sign in form" {
-		t.Fatalf("expected sign in form message, got %v", response["message"])
-	}
-}
-
 // Prevent unused import errors
 var (
 	_ = sql.ErrNoRows
