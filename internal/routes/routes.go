@@ -28,17 +28,11 @@ func NewRouter(db *sql.DB, cfg *config.Config) http.Handler {
 	authMw := middleware.AuthMiddleware(cfg.JWTSecret)
 	
 	mux.Handle("/api/users/sign_out", authMw(http.HandlerFunc(userHandler.SignOut)))
+	mux.Handle("/api/users/profile", authMw(http.HandlerFunc(userHandler.GetProfile)))
 	
-	// Handle both GET and PATCH/PUT for /api/users
-	mux.Handle("/api/users", authMw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			userHandler.GetProfile(w, r)
-		} else if r.Method == http.MethodPatch || r.Method == http.MethodPut {
-			userHandler.UpdateProfile(w, r)
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})))
+	// Handle PATCH/PUT for /api/users/profile
+	mux.Handle("PATCH /api/users/profile", authMw(http.HandlerFunc(userHandler.UpdateProfile)))
+	mux.Handle("PUT /api/users/profile", authMw(http.HandlerFunc(userHandler.UpdateProfile)))
 
 	return mux
 }

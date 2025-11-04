@@ -119,8 +119,8 @@ Public endpoints:
 
 Protected endpoints (send `Authorization: Bearer <token>`):
 
-- `GET /api/users` – fetch current user profile
-- `PATCH /api/users` or `PUT /api/users` – update profile fields
+- `GET /api/users/profile` – fetch current user profile
+- `PATCH /api/users/profile` or `PUT /api/users/profile` – update profile fields
 - `DELETE /api/users/sign_out` – sign out (client-side token discard)
 
 Tokens expire after 24 hours by default. Logging out simply means discarding the token on the client.
