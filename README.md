@@ -4,8 +4,8 @@ KyupiKyupi is a matching application. This repository contains the Go service th
 
 - User registration and login with bcrypt-hashed passwords
 - JWT-based session management (24-hour access tokens)
-- Authenticated profile retrieval and updates (name, age, gender, bio, interests, photo URL)
-- Account deletion endpoint (logout is handled client-side by discarding tokens)
+- Authenticated profile retrieval and updates (name, gender, birth_date, bio, avatar_url)
+- User logout (client-side token discard)
 
 The data layer is PostgreSQL, accessed through `database/sql`. Docker Compose spins up PostgreSQL (and a MongoDB container reserved for future features).
 
@@ -114,14 +114,14 @@ Public endpoints:
 
 - `GET /` – welcome payload
 - `GET /health` – readiness probe
-- `POST /api/v1/auth/register` – sign up, returns JWT
-- `POST /api/v1/auth/login` – authenticate, returns JWT
+- `POST /api/users` – create user account, returns JWT
+- `POST /api/users/sign_in` – authenticate, returns JWT
 
 Protected endpoints (send `Authorization: Bearer <token>`):
 
-- `GET /api/v1/profile` – fetch current user profile
-- `POST /api/v1/profile/update` – update profile fields
-- `DELETE /api/v1/account` – delete the signed-in user
+- `GET /api/users/profile` – fetch current user profile
+- `PATCH /api/users/profile` or `PUT /api/users/profile` – update profile fields
+- `DELETE /api/users/sign_out` – sign out (client-side token discard)
 
 Tokens expire after 24 hours by default. Logging out simply means discarding the token on the client.
 

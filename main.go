@@ -38,7 +38,7 @@ func main() {
   addr := cfg.Addr()
   srv := &http.Server{
     Addr:    addr,
-    Handler: routes.NewRouter(),
+    Handler: routes.NewRouter(pg, cfg),
   }
 
   log.Printf("starting server (env=%s) on %s", cfg.Env, addr)
