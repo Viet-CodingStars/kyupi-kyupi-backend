@@ -5,22 +5,27 @@ import (
   "net/http"
   "net/http/httptest"
   "testing"
+
+  "github.com/gin-gonic/gin"
 )
 
 func TestHealthHandler(t *testing.T) {
-  req := httptest.NewRequest(http.MethodGet, "/health", nil)
-  rr := httptest.NewRecorder()
-  HealthHandler(rr, req)
+  gin.SetMode(gin.TestMode)
+  responseRecorder := httptest.NewRecorder()
+  ctx, _ := gin.CreateTestContext(responseRecorder)
+  ctx.Request = httptest.NewRequest(http.MethodGet, "/health", nil)
 
-  if rr.Code != http.StatusOK {
-    t.Fatalf("expected status 200, got %d", rr.Code)
+  HealthHandler(ctx)
+
+  if responseRecorder.Code != http.StatusOK {
+    t.Fatalf("expected status 200, got %d", responseRecorder.Code)
   }
 
-  var body map[string]string
-  if err := json.NewDecoder(rr.Body).Decode(&body); err != nil {
+  var body StatusResponse
+  if err := json.NewDecoder(responseRecorder.Body).Decode(&body); err != nil {
     t.Fatalf("invalid json response: %v", err)
   }
-  if body["status"] != "ok" {
-    t.Fatalf("expected status 'ok', got %q", body["status"])
+  if body.Status != "ok" {
+    t.Fatalf("expected status 'ok', got %q", body.Status)
   }
 }
