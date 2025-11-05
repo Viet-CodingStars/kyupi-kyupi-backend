@@ -1,84 +1,124 @@
 package middleware
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"testing"
+  "net/http"
+  "net/http/httptest"
+  "testing"
 
-	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/auth"
-	"github.com/google/uuid"
+  "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/auth"
+  "github.com/gin-gonic/gin"
+  "github.com/google/uuid"
 )
 
 func TestAuthMiddleware(t *testing.T) {
-	secret := "test-secret"
-	userID := uuid.New()
-	email := "test@example.com"
+  gin.SetMode(gin.TestMode)
+  secret := "test-secret"
+  userID := uuid.New()
+  email := "test@example.com"
 
-	// Generate a valid token
-	token, err := auth.GenerateToken(userID, email, secret)
-	if err != nil {
-		t.Fatalf("failed to generate token: %v", err)
-	}
+  token, err := auth.GenerateToken(userID, email, secret)
+  if err != nil {
+    t.Fatalf("failed to generate token: %v", err)
+  }
 
-	// Create a test handler
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id, ok := GetUserID(r.Context())
-		if !ok {
-			t.Fatal("expected user ID in context")
-		}
-		if id != userID {
-			t.Fatalf("expected user ID %v, got %v", userID, id)
-		}
-		w.WriteHeader(http.StatusOK)
-	})
+  t.Run("valid token", func(t *testing.T) {
+    handlerCalled := false
+    router := gin.New()
+    router.Use(AuthMiddleware(secret))
+    router.GET("/test", func(c *gin.Context) {
+      handlerCalled = true
+      id, ok := GetUserID(c.Request.Context())
+      if !ok {
+        t.Fatal("expected user ID in context")
+      }
+      if id != userID {
+        t.Fatalf("expected user ID %v, got %v", userID, id)
+      }
+      ginUserID, exists := c.Get(string(UserIDKey))
+      if !exists {
+        t.Fatal("expected user ID in gin context")
+      }
+      if idFromGin, ok := ginUserID.(uuid.UUID); !ok || idFromGin != userID {
+        t.Fatalf("expected user ID %v in gin context, got %v", userID, ginUserID)
+      }
+      c.Status(http.StatusOK)
+    })
 
-	// Wrap with auth middleware
-	authHandler := AuthMiddleware(secret)(handler)
+    req := httptest.NewRequest(http.MethodGet, "/test", nil)
+    req.Header.Set("Authorization", "Bearer "+token)
+    rr := httptest.NewRecorder()
+    router.ServeHTTP(rr, req)
 
-	t.Run("valid token", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
-		req.Header.Set("Authorization", "Bearer "+token)
-		rr := httptest.NewRecorder()
+    if rr.Code != http.StatusOK {
+      t.Fatalf("expected status 200, got %d", rr.Code)
+    }
+    if !handlerCalled {
+      t.Fatal("expected handler to execute")
+    }
+  })
 
-		authHandler.ServeHTTP(rr, req)
+  t.Run("missing authorization header", func(t *testing.T) {
+    handlerCalled := false
+    router := gin.New()
+    router.Use(AuthMiddleware(secret))
+    router.GET("/test", func(c *gin.Context) {
+      handlerCalled = true
+      c.Status(http.StatusOK)
+    })
 
-		if rr.Code != http.StatusOK {
-			t.Fatalf("expected status 200, got %d", rr.Code)
-		}
-	})
+    req := httptest.NewRequest(http.MethodGet, "/test", nil)
+    rr := httptest.NewRecorder()
+    router.ServeHTTP(rr, req)
 
-	t.Run("missing authorization header", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
-		rr := httptest.NewRecorder()
+    if rr.Code != http.StatusUnauthorized {
+      t.Fatalf("expected status 401, got %d", rr.Code)
+    }
+    if handlerCalled {
+      t.Fatal("expected handler not to execute")
+    }
+  })
 
-		authHandler.ServeHTTP(rr, req)
+  t.Run("invalid authorization header format", func(t *testing.T) {
+    handlerCalled := false
+    router := gin.New()
+    router.Use(AuthMiddleware(secret))
+    router.GET("/test", func(c *gin.Context) {
+      handlerCalled = true
+      c.Status(http.StatusOK)
+    })
 
-		if rr.Code != http.StatusUnauthorized {
-			t.Fatalf("expected status 401, got %d", rr.Code)
-		}
-	})
+    req := httptest.NewRequest(http.MethodGet, "/test", nil)
+    req.Header.Set("Authorization", "InvalidFormat")
+    rr := httptest.NewRecorder()
+    router.ServeHTTP(rr, req)
 
-	t.Run("invalid authorization header format", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
-		req.Header.Set("Authorization", "InvalidFormat")
-		rr := httptest.NewRecorder()
+    if rr.Code != http.StatusUnauthorized {
+      t.Fatalf("expected status 401, got %d", rr.Code)
+    }
+    if handlerCalled {
+      t.Fatal("expected handler not to execute")
+    }
+  })
 
-		authHandler.ServeHTTP(rr, req)
+  t.Run("invalid token", func(t *testing.T) {
+    handlerCalled := false
+    router := gin.New()
+    router.Use(AuthMiddleware(secret))
+    router.GET("/test", func(c *gin.Context) {
+      handlerCalled = true
+      c.Status(http.StatusOK)
+    })
 
-		if rr.Code != http.StatusUnauthorized {
-			t.Fatalf("expected status 401, got %d", rr.Code)
-		}
-	})
+    req := httptest.NewRequest(http.MethodGet, "/test", nil)
+    req.Header.Set("Authorization", "Bearer invalid-token")
+    rr := httptest.NewRecorder()
+    router.ServeHTTP(rr, req)
 
-	t.Run("invalid token", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
-		req.Header.Set("Authorization", "Bearer invalid-token")
-		rr := httptest.NewRecorder()
-
-		authHandler.ServeHTTP(rr, req)
-
-		if rr.Code != http.StatusUnauthorized {
-			t.Fatalf("expected status 401, got %d", rr.Code)
-		}
-	})
+    if rr.Code != http.StatusUnauthorized {
+      t.Fatalf("expected status 401, got %d", rr.Code)
+    }
+    if handlerCalled {
+      t.Fatal("expected handler not to execute")
+    }
+  })
 }

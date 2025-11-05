@@ -1,14 +1,4 @@
 services:
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-      - mongo
-
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -28,6 +18,16 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - mongo
 
 volumes:
   pgdata:

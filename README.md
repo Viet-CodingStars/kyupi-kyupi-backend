@@ -6,6 +6,7 @@ KyupiKyupi is a matching application. This repository contains the Go service th
 - JWT-based session management (24-hour access tokens)
 - Authenticated profile retrieval and updates (name, gender, birth_date, bio, avatar_url)
 - User logout (client-side token discard)
+- Gin-powered HTTP server and routing
 
 The data layer is PostgreSQL, accessed through `database/sql`. Docker Compose spins up PostgreSQL (and a MongoDB container reserved for future features).
 
@@ -72,6 +73,21 @@ At startup the service ensures the `users` table exists in PostgreSQL, so you do
    ```
 
 Persistent volumes `pgdata` and `mongodata` store database data between restarts. Use `docker compose down -v` to remove them. The API validates connections to both PostgreSQL and MongoDB during startup.
+
+---
+
+## API Documentation (Swagger)
+
+- When the server is running, visit <http://localhost:8080/swagger/index.html> to view the interactive docs.
+- The generated specification is committed under `docs/` (`swagger.json` / `swagger.yaml`).
+- To regenerate after changing handler annotations:
+
+   ```bash
+   go install github.com/swaggo/swag/cmd/swag@latest
+   $(go env GOPATH)/bin/swag init --output docs --parseInternal --parseDependency
+   ```
+
+   The CLI is only required when documentation changes are made.
 
 ---
 
@@ -145,9 +161,9 @@ GitHub Actions (`.github/workflows/ci.yml`) runs `go mod tidy`, `go test ./...`,
 - `internal/models` – domain models (e.g., `User`)
 - `internal/repo` – data access layer
 - `internal/auth` – JWT helper functions
-- `internal/middleware` – authentication middleware
-- `internal/handlers` – HTTP handlers for auth/profile/health
-- `internal/routes` – router wiring and middleware composition
+- `internal/middleware` – authentication middleware for Gin
+- `internal/handlers` – Gin handlers for auth/profile/health endpoints
+- `internal/routes` – Gin router wiring and middleware composition
 - `docker-compose.yml` – local development stack
 - `Makefile` – convenience tasks
 
