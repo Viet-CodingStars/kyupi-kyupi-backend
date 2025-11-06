@@ -176,4 +176,5 @@ GitHub Actions (`.github/workflows/ci.yml`) runs `go mod tidy`, `go test ./...`,
 
 ## Contributing
 
-Bug reports, feature ideas, and pull requests are welcome. For significant changes, open an issue or discussion first so we can coordinate design decisions.
+Bug reports, feature ideas, and pull requests are welcome. For significant changes, open an issue or discussion first so we can coordinate design decisions. 
+Test push
