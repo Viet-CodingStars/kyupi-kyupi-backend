@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -13,15 +15,34 @@ import (
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/config"
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/db"
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/routes"
+	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/storage"
 )
 
 func main() {
 	cfg := config.LoadFromEnv()
 
+	if err := os.MkdirAll(cfg.LogDir, 0o755); err != nil {
+		log.Fatalf("failed to create log directory: %v", err)
+	}
+
+	logFilePath := filepath.Join(cfg.LogDir, "app.log")
+	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		log.Fatalf("failed to open log file: %v", err)
+	}
+	defer logFile.Close()
+
+	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
+
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Title = "Kyupi Kyupi Backend API"
 	docs.SwaggerInfo.Description = "API documentation for the Kyupi Kyupi backend service."
 	docs.SwaggerInfo.Version = "1.0"
+
+	avatarStorage, err := storage.NewLocalAvatarStorage(cfg.AvatarStorageDir, cfg.AvatarURLPrefix)
+	if err != nil {
+		log.Fatalf("failed to initialize avatar storage: %v", err)
+	}
 
 	pg, err := db.Connect(cfg)
 	if err != nil {
@@ -44,7 +65,7 @@ func main() {
 	addr := cfg.Addr()
 	srv := &http.Server{
 		Addr:    addr,
-		Handler: routes.NewRouter(pg, cfg),
+		Handler: routes.NewRouter(pg, cfg, avatarStorage),
 	}
 
 	log.Printf("starting server (env=%s) on %s", cfg.Env, addr)

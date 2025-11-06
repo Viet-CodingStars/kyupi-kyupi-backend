@@ -1,47 +1,53 @@
 package routes
 
 import (
-  "database/sql"
-  "net/http"
+	"database/sql"
+	"net/http"
 
-  "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/config"
-  "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/handlers"
-  "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/middleware"
-  "github.com/gin-gonic/gin"
-  swaggerFiles "github.com/swaggo/files"
-  ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/config"
+	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/handlers"
+	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/middleware"
+	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/storage"
+	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // NewRouter creates the Gin engine for the application.
-func NewRouter(db *sql.DB, cfg *config.Config) http.Handler {
-  if cfg.IsProduction() {
-    gin.SetMode(gin.ReleaseMode)
-  }
+func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStorage) http.Handler {
+	if cfg.IsProduction() {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
-  router := gin.New()
-  router.Use(gin.Logger(), gin.Recovery())
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery())
 
-  router.GET("/", handlers.RootHandler)
-  router.GET("/health", handlers.HealthHandler)
-  router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	if cfg.AvatarStorageDir != "" && cfg.AvatarURLPrefix != "" {
+		router.Static(cfg.AvatarURLPrefix, cfg.AvatarStorageDir)
+	}
 
-  userHandler := handlers.NewUserHandler(db, cfg.JWTSecret)
-  authMw := middleware.AuthMiddleware(cfg.JWTSecret)
+	router.GET("/", handlers.RootHandler)
+	router.GET("/health", handlers.HealthHandler)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-  api := router.Group("/api")
-  {
-    api.POST("/users", userHandler.SignUp)
-    api.POST("/users/sign_in", userHandler.SignIn)
+	userHandler := handlers.NewUserHandler(db, cfg.JWTSecret, avatarStorage)
+	authMw := middleware.AuthMiddleware(cfg.JWTSecret)
 
-    users := api.Group("/users")
-    users.Use(authMw)
-    {
-      users.DELETE("/sign_out", userHandler.SignOut)
-      users.GET("/profile", userHandler.GetProfile)
-      users.PATCH("/profile", userHandler.UpdateProfile)
-      users.PUT("/profile", userHandler.UpdateProfile)
-    }
-  }
+	api := router.Group("/api")
+	{
+		api.POST("/users", userHandler.SignUp)
+		api.POST("/users/sign_in", userHandler.SignIn)
 
-  return router
+		users := api.Group("/users")
+		users.Use(authMw)
+		{
+			users.DELETE("/sign_out", userHandler.SignOut)
+			users.GET("/profile", userHandler.GetProfile)
+			users.PATCH("/profile", userHandler.UpdateProfile)
+			users.PUT("/profile", userHandler.UpdateProfile)
+			users.POST("/profile/avatar", userHandler.UploadAvatar)
+		}
+	}
+
+	return router
 }

@@ -183,6 +183,45 @@ paths:
       summary: Update current user profile
       tags:
       - Users
+  /api/users/profile/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads an avatar image for the current user and updates the profile.
+      parameters:
+      - description: Avatar image
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload avatar image
+      tags:
+      - Users
   /api/users/sign_in:
     post:
       consumes:

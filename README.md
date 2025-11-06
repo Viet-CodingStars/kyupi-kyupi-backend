@@ -37,6 +37,7 @@ Key environment variables:
 - `APP_ENV` – `DEVELOPMENT`, `TESTING`, or `PRODUCTION` (default `DEVELOPMENT`)
 - `PORT` – HTTP port (default `8080`)
 - `LOG_LEVEL` – `debug`, `info`, `warn`, or `error`
+- `LOG_DIR` – directory where runtime logs are stored (default `log`)
 - `JWT_SECRET` – required; used to sign access tokens (change this in production)
 - PostgreSQL configuration (required)
    - `POSTGRES_URL`, or
@@ -45,6 +46,9 @@ Key environment variables:
 - MongoDB configuration (required)
    - `MONGODB_URL`, or
    - `MONGO_HOST`, `MONGO_PORT`, `MONGO_USER`, `MONGO_PASSWORD`, `MONGO_DATABASE`, `MONGO_AUTH_SOURCE`, `MONGO_REPLICA_SET`
+- Avatar storage configuration (optional; defaults shown)
+   - `AVATAR_STORAGE_DIR` – filesystem path for uploaded avatars (default `storage/avatars`)
+   - `AVATAR_URL_PREFIX` – public URL prefix served by the API (default `/avatars`)
 
 At startup the service ensures the `users` table exists in PostgreSQL, so you do not need a separate migration step for basic usage.
 
@@ -72,7 +76,7 @@ At startup the service ensures the `users` table exists in PostgreSQL, so you do
    docker compose down
    ```
 
-Persistent volumes `pgdata` and `mongodata` store database data between restarts. Use `docker compose down -v` to remove them. The API validates connections to both PostgreSQL and MongoDB during startup.
+Persistent volumes `pgdata` and `mongodata` store database data between restarts. Avatars persist in `./storage/avatars` on the host (mounted into the container). Use `docker compose down -v` to remove database volumes, and delete the `storage/` directory if you want to clear uploaded avatars. The API validates connections to both PostgreSQL and MongoDB during startup.
 
 ---
 
@@ -137,6 +141,7 @@ Protected endpoints (send `Authorization: Bearer <token>`):
 
 - `GET /api/users/profile` – fetch current user profile
 - `PATCH /api/users/profile` or `PUT /api/users/profile` – update profile fields
+- `POST /api/users/profile/avatar` – upload or replace the avatar image (multipart/form-data with `avatar` field)
 - `DELETE /api/users/sign_out` – sign out (client-side token discard)
 
 Tokens expire after 24 hours by default. Logging out simply means discarding the token on the client.
