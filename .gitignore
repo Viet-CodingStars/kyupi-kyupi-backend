@@ -22,3 +22,11 @@ bin/
 .env
 .env.local
 .env.*.local
+
+# Local storage
+/storage/*
+!/storage/.keep
+
+# Runtime logs
+/log/*
+!/log/.keep
