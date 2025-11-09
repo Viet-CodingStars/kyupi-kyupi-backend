@@ -39,9 +39,11 @@ func NewUserHandler(db *sql.DB, jwtSecret string, avatarStorage storage.AvatarSt
 
 // SignUpRequest represents the registration request.
 type SignUpRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	Name      string `json:"name"`
+	Gender    int    `json:"gender"`
+	BirthDate string `json:"birth_date"` // Nhận vào string "YYYY-MM-DD" để validate
 }
 
 // SignInRequest represents the login request.
@@ -68,11 +70,32 @@ type MessageResponse struct {
 
 // UpdateUserRequest represents the update user request payload.
 type UpdateUserRequest struct {
-	Name      *string `json:"name,omitempty"`
-	Gender    *string `json:"gender,omitempty"`
-	BirthDate *string `json:"birth_date,omitempty"`
-	Bio       *string `json:"bio,omitempty"`
-	AvatarURL *string `json:"avatar_url,omitempty"`
+	Name         *string `json:"name,omitempty"`
+	Gender       *int    `json:"gender,omitempty"`       // Đổi sang *int
+	BirthDate    *string `json:"birth_date,omitempty"` // Vẫn là *string "YYYY-MM-DD"
+	Bio          *string `json:"bio,omitempty"`
+	AvatarURL    *string `json:"avatar_url,omitempty"`
+	TargetGender *int    `json:"target_gender,omitempty"` // Thêm *int
+}
+
+// validateGender checks if gender is 1, 2, or 3
+func validateGender(gender int) bool {
+	return gender == 1 || gender == 2 || gender == 3
+}
+
+// validateAge checks if birthdate is at least 18 years ago
+func validateAge(birthDate time.Time) bool {
+	eighteenYearsAgo := time.Now().AddDate(-18, 0, 0)
+	return birthDate.Before(eighteenYearsAgo) || birthDate.Equal(eighteenYearsAgo)
+}
+
+// parseBirthDate parses a "YYYY-MM-DD" string
+func parseBirthDate(dateString string) (time.Time, error) {
+	birthDate, err := time.Parse("2006-01-02", dateString)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid birth_date format (expected YYYY-MM-DD)")
+	}
+	return birthDate, nil
 }
 
 // UploadAvatar handles avatar uploads for the current user.
@@ -107,7 +130,6 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// basic size validation to prevent oversized uploads in dev environment (~5MB default limit)
 	const maxAvatarSize = 5 << 20
 	if fileHeader.Size > maxAvatarSize {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: fmt.Sprintf("avatar file too large (max %d bytes)", maxAvatarSize)})
@@ -161,8 +183,23 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 		return
 	}
 
-	if req.Email == "" || req.Password == "" || req.Name == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "email, password, and name are required"})
+	if req.Email == "" || req.Password == "" || req.Name == "" || req.BirthDate == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "email, password, name, and birth_date are required"})
+		return
+	}
+	if !validateGender(req.Gender) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid gender (must be 1, 2, or 3)"})
+		return
+	}
+
+	birthDate, err := parseBirthDate(req.BirthDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	if !validateAge(birthDate) {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "user must be at least 18 years old"})
 		return
 	}
 
@@ -176,6 +213,8 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 		Email:        req.Email,
 		PasswordHash: hashedPassword,
 		Name:         req.Name,
+		Gender:       req.Gender,
+		BirthDate:    birthDate,
 	}
 
 	if err := h.userRepo.Create(user); err != nil {
@@ -244,7 +283,6 @@ func (h *UserHandler) SignIn(c *gin.Context) {
 // @Success 200 {object} MessageResponse
 // @Router /api/users/sign_out [delete]
 func (h *UserHandler) SignOut(c *gin.Context) {
-	// Since JWT is stateless, logout is handled on the client side by discarding the token
 	c.JSON(http.StatusOK, MessageResponse{Message: "logged out successfully"})
 }
 
@@ -308,24 +346,43 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	if req.Name != nil {
+		if *req.Name == "" {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "name cannot be empty"})
+			return
+		}
 		user.Name = *req.Name
 	}
 	if req.Gender != nil {
+		if !validateGender(*req.Gender) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid gender (must be 1, 2, or 3)"})
+			return
+		}
 		user.Gender = *req.Gender
 	}
 	if req.BirthDate != nil {
-		birthDate, err := time.Parse("2006-01-02", *req.BirthDate)
+		birthDate, err := parseBirthDate(*req.BirthDate)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid birth_date format (expected YYYY-MM-DD)"})
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 			return
 		}
-		user.BirthDate = &birthDate
+		if !validateAge(birthDate) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "user must be at least 18 years old"})
+			return
+		}
+		user.BirthDate = birthDate
 	}
 	if req.Bio != nil {
 		user.Bio = *req.Bio
 	}
 	if req.AvatarURL != nil {
 		user.AvatarURL = *req.AvatarURL
+	}
+	if req.TargetGender != nil {
+		if !validateGender(*req.TargetGender) {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid target_gender (must be 1, 2, or 3)"})
+			return
+		}
+		user.TargetGender = *req.TargetGender
 	}
 
 	if err := h.userRepo.Update(user); err != nil {

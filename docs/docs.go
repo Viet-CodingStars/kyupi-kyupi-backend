@@ -386,8 +386,15 @@ const docTemplate = `{
         "handlers.SignUpRequest": {
             "type": "object",
             "properties": {
+                "birth_date": {
+                    "description": "Nhận vào string \"YYYY-MM-DD\" để validate",
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
+                },
+                "gender": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -415,13 +422,19 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "birth_date": {
+                    "description": "Vẫn là *string \"YYYY-MM-DD\"",
                     "type": "string"
                 },
                 "gender": {
-                    "type": "string"
+                    "description": "Đổi sang *int",
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
+                },
+                "target_gender": {
+                    "description": "Thêm *int",
+                    "type": "integer"
                 }
             }
         },
@@ -444,13 +457,16 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "gender": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
+                },
+                "target_gender": {
+                    "type": "integer"
                 },
                 "updated_at": {
                     "type": "string"

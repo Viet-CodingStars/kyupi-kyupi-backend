@@ -3,13 +3,15 @@ package repo
 import (
 	"database/sql"
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/models"
 	"github.com/google/uuid"
 )
 
 var (
-	ErrUserNotFound      = errors.New("user not found")
+	ErrUserNotFound       = errors.New("user not found")
 	ErrEmailAlreadyExists = errors.New("email already exists")
 )
 
@@ -26,14 +28,21 @@ func NewUserRepo(db *sql.DB) *UserRepo {
 // Create inserts a new user into the database
 func (r *UserRepo) Create(user *models.User) error {
 	query := `
-		INSERT INTO users (email, password_hash, name, gender, birth_date, bio, avatar_url)
+		INSERT INTO users (email, password_hash, name, gender, birth_date, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, created_at, updated_at
+		RETURNING id
 	`
-	err := r.db.QueryRow(query, user.Email, user.PasswordHash, user.Name, user.Gender, user.BirthDate, user.Bio, user.AvatarURL).
-		Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+	now := time.Now()
+	user.CreatedAt = now
+	user.UpdatedAt = now
+
+	err := r.db.QueryRow(query,
+		user.Email, user.PasswordHash, user.Name, user.Gender, user.BirthDate,
+		user.CreatedAt, user.UpdatedAt,
+	).Scan(&user.ID)
+
 	if err != nil {
-		if err.Error() == "pq: duplicate key value violates unique constraint \"users_email_key\"" {
+		if strings.Contains(err.Error(), "users_email_key") {
 			return ErrEmailAlreadyExists
 		}
 		return err
@@ -44,13 +53,20 @@ func (r *UserRepo) Create(user *models.User) error {
 // GetByEmail retrieves a user by email
 func (r *UserRepo) GetByEmail(email string) (*models.User, error) {
 	query := `
-		SELECT id, email, password_hash, name, gender, birth_date, bio, avatar_url, created_at, updated_at
+		SELECT id, email, password_hash, name, gender, birth_date, target_gender, bio, avatar_url, created_at, updated_at
 		FROM users WHERE email = $1
 	`
 	user := &models.User{}
+
+	// Dùng NullInt32 và NullString để scan các trường có thể là NULL
+	var targetGender sql.NullInt32
+	var bio sql.NullString
+	var avatarURL sql.NullString
+
 	err := r.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Gender,
-		&user.BirthDate, &user.Bio, &user.AvatarURL, &user.CreatedAt, &user.UpdatedAt,
+		&user.BirthDate, &targetGender, &bio, &avatarURL,
+		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, ErrUserNotFound
@@ -58,19 +74,38 @@ func (r *UserRepo) GetByEmail(email string) (*models.User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Chuyển đổi từ Nullable sang non-nullable
+	if targetGender.Valid {
+		user.TargetGender = int(targetGender.Int32)
+	}
+	if bio.Valid {
+		user.Bio = bio.String
+	}
+	if avatarURL.Valid {
+		user.AvatarURL = avatarURL.String
+	}
+
 	return user, nil
 }
 
 // GetByID retrieves a user by ID
 func (r *UserRepo) GetByID(id uuid.UUID) (*models.User, error) {
 	query := `
-		SELECT id, email, password_hash, name, gender, birth_date, bio, avatar_url, created_at, updated_at
+		SELECT id, email, password_hash, name, gender, birth_date, target_gender, bio, avatar_url, created_at, updated_at
 		FROM users WHERE id = $1
 	`
 	user := &models.User{}
+
+	// Dùng NullInt32 và NullString để scan các trường có thể là NULL
+	var targetGender sql.NullInt32
+	var bio sql.NullString
+	var avatarURL sql.NullString
+
 	err := r.db.QueryRow(query, id).Scan(
 		&user.ID, &user.Email, &user.PasswordHash, &user.Name, &user.Gender,
-		&user.BirthDate, &user.Bio, &user.AvatarURL, &user.CreatedAt, &user.UpdatedAt,
+		&user.BirthDate, &targetGender, &bio, &avatarURL,
+		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, ErrUserNotFound
@@ -78,6 +113,18 @@ func (r *UserRepo) GetByID(id uuid.UUID) (*models.User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Chuyển đổi từ Nullable sang non-nullable
+	if targetGender.Valid {
+		user.TargetGender = int(targetGender.Int32)
+	}
+	if bio.Valid {
+		user.Bio = bio.String
+	}
+	if avatarURL.Valid {
+		user.AvatarURL = avatarURL.String
+	}
+
 	return user, nil
 }
 
@@ -85,12 +132,15 @@ func (r *UserRepo) GetByID(id uuid.UUID) (*models.User, error) {
 func (r *UserRepo) Update(user *models.User) error {
 	query := `
 		UPDATE users
-		SET name = $1, gender = $2, birth_date = $3, bio = $4, avatar_url = $5, updated_at = NOW()
-		WHERE id = $6
+		SET name = $1, gender = $2, birth_date = $3, bio = $4, avatar_url = $5, target_gender = $6, updated_at = NOW()
+		WHERE id = $7
 		RETURNING updated_at
 	`
-	err := r.db.QueryRow(query, user.Name, user.Gender, user.BirthDate, user.Bio, user.AvatarURL, user.ID).
-		Scan(&user.UpdatedAt)
+	err := r.db.QueryRow(query,
+		user.Name, user.Gender, user.BirthDate, user.Bio, user.AvatarURL,
+		user.TargetGender, user.ID,
+	).Scan(&user.UpdatedAt)
+
 	if err == sql.ErrNoRows {
 		return ErrUserNotFound
 	}

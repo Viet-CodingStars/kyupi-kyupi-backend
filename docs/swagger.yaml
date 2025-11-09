@@ -25,8 +25,13 @@ definitions:
     type: object
   handlers.SignUpRequest:
     properties:
+      birth_date:
+        description: Nhận vào string "YYYY-MM-DD" để validate
+        type: string
       email:
         type: string
+      gender:
+        type: integer
       name:
         type: string
       password:
@@ -44,11 +49,16 @@ definitions:
       bio:
         type: string
       birth_date:
+        description: Vẫn là *string "YYYY-MM-DD"
         type: string
       gender:
-        type: string
+        description: Đổi sang *int
+        type: integer
       name:
         type: string
+      target_gender:
+        description: Thêm *int
+        type: integer
     type: object
   models.User:
     properties:
@@ -63,11 +73,13 @@ definitions:
       email:
         type: string
       gender:
-        type: string
+        type: integer
       id:
         type: string
       name:
         type: string
+      target_gender:
+        type: integer
       updated_at:
         type: string
     type: object
