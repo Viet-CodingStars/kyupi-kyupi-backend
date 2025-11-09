@@ -6,10 +6,32 @@ definitions:
       user:
         $ref: '#/definitions/models.User'
     type: object
+  handlers.CreateLikeRequest:
+    properties:
+      status:
+        enum:
+        - like
+        - pass
+        type: string
+      target_user_id:
+        type: string
+    required:
+    - status
+    - target_user_id
+    type: object
   handlers.ErrorResponse:
     properties:
       error:
         type: string
+    type: object
+  handlers.LikeResponse:
+    properties:
+      like:
+        $ref: '#/definitions/models.Like'
+      match:
+        $ref: '#/definitions/models.Match'
+      matched:
+        type: boolean
     type: object
   handlers.MessageResponse:
     properties:
@@ -48,6 +70,35 @@ definitions:
       gender:
         type: string
       name:
+        type: string
+    type: object
+  models.Like:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      status:
+        description: '"like" or "pass"'
+        type: string
+      target_user_id:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.Match:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      updated_at:
+        type: string
+      user1_id:
+        type: string
+      user2_id:
         type: string
     type: object
   models.User:
@@ -271,6 +322,72 @@ paths:
       summary: Sign out the current user
       tags:
       - Auth
+  /api/v1/likes:
+    post:
+      consumes:
+      - application/json
+      description: Creates a like or pass for a target user. If both users like each
+        other, a match is automatically created.
+      parameters:
+      - description: Like/Pass payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateLikeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.LikeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a like or pass
+      tags:
+      - Likes
+  /api/v1/matches:
+    get:
+      description: Returns all matches for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Match'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all matches
+      tags:
+      - Matches
   /health:
     get:
       description: Returns OK when the service is healthy.
