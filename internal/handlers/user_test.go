@@ -95,7 +95,7 @@ func TestSignUp(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 
-		body := bytes.NewBufferString(`{"email":"test@example.com","password":"password123","name":"Test User"}`)
+		body := bytes.NewBufferString(`{"email":"test@example.com","password":"password123","name":"Test User", "gender": 1, "birth_date": "2000-01-01"}`)
 		req := httptest.NewRequest(http.MethodPost, "/api/users", body)
 		req.Header.Set("Content-Type", "application/json")
 		c.Request = req
