@@ -36,6 +36,8 @@ definitions:
         type: string
       password:
         type: string
+      target_gender:
+        type: string
     type: object
   handlers.StatusResponse:
     properties:
