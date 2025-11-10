@@ -1,51 +1,51 @@
 package db
 
 import (
-	"context"
-	"database/sql"
-	"time"
+  "context"
+  "database/sql"
+  "time"
 
-	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/config"
-	_ "github.com/lib/pq"
+  "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/config"
+  _ "github.com/lib/pq"
 )
 
 // Connect opens a sql.DB to Postgres using the provided config and validates connectivity.
 func Connect(cfg *config.Config) (*sql.DB, error) {
-	dsn := cfg.PostgresDSN()
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, err
-	}
+  dsn := cfg.PostgresDSN()
+  db, err := sql.Open("postgres", dsn)
+  if err != nil {
+    return nil, err
+  }
 
-	if cfg.PostgresConnMaxLifetime > 0 {
-		db.SetConnMaxLifetime(cfg.PostgresConnMaxLifetime)
-	}
-	if cfg.PostgresMaxOpenConns > 0 {
-		db.SetMaxOpenConns(cfg.PostgresMaxOpenConns)
-	}
-	if cfg.PostgresMaxIdleConns > 0 {
-		db.SetMaxIdleConns(cfg.PostgresMaxIdleConns)
-	}
+  if cfg.PostgresConnMaxLifetime > 0 {
+    db.SetConnMaxLifetime(cfg.PostgresConnMaxLifetime)
+  }
+  if cfg.PostgresMaxOpenConns > 0 {
+    db.SetMaxOpenConns(cfg.PostgresMaxOpenConns)
+  }
+  if cfg.PostgresMaxIdleConns > 0 {
+    db.SetMaxIdleConns(cfg.PostgresMaxIdleConns)
+  }
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
-		db.Close()
-		return nil, err
-	}
+  ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+  defer cancel()
+  if err := db.PingContext(ctx); err != nil {
+    db.Close()
+    return nil, err
+  }
 
-	// Initialize schema
-	if err := initSchema(db); err != nil {
-		db.Close()
-		return nil, err
-	}
+  // Initialize schema
+  if err := initSchema(db); err != nil {
+    db.Close()
+    return nil, err
+  }
 
-	return db, nil
+  return db, nil
 }
 
 // initSchema creates the users table if it doesn't exist
 func initSchema(db *sql.DB) error {
-	schema := `
+  schema := `
   CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -54,13 +54,32 @@ func initSchema(db *sql.DB) error {
     gender SMALLINT NOT NULL CHECK (gender IN (1, 2, 3)),
     birth_date DATE NOT NULL,
     target_gender SMALLINT CHECK (target_gender IN (1, 2, 3)),
+    intention VARCHAR(50) NOT NULL DEFAULT 'still_figuring_out' CHECK (intention IN (
+      'long_term_partner',
+      'long_term_open_to_short',
+      'short_term_open_to_long',
+      'short_term_fun',
+      'new_friends',
+      'still_figuring_out'
+    )),
     bio TEXT,
     avatar_url TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
   );
+  ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS intention VARCHAR(50) NOT NULL DEFAULT 'still_figuring_out';
+  ALTER TABLE users
+    ADD CONSTRAINT IF NOT EXISTS chk_users_intention CHECK (intention IN (
+      'long_term_partner',
+      'long_term_open_to_short',
+      'short_term_open_to_long',
+      'short_term_fun',
+      'new_friends',
+      'still_figuring_out'
+    ));
   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
   `
-	_, err := db.Exec(schema)
-	return err
+  _, err := db.Exec(schema)
+  return err
 }

@@ -387,20 +387,45 @@ const docTemplate = `{
       "type": "object",
       "properties": {
         "birth_date": {
-          "description": "Accepts string \"YYYY-MM-DD\" for validation",
+          "description": "Accepts string \"YYYY-MM-DD\" for validation (user must be at least 18 years old)",
           "type": "string"
+        },
+        "intention": {
+          "description": "Optional dating intention; defaults to still_figuring_out",
+          "type": "string",
+          "enum": [
+            "long_term_partner",
+            "long_term_open_to_short",
+            "short_term_open_to_long",
+            "short_term_fun",
+            "new_friends",
+            "still_figuring_out"
+          ]
         },
         "email": {
           "type": "string"
         },
         "gender": {
-          "type": "string"
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
         },
         "name": {
           "type": "string"
         },
         "password": {
           "type": "string"
+        },
+        "target_gender": {
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
         }
       }
     },
@@ -426,13 +451,35 @@ const docTemplate = `{
           "type": "string"
         },
         "gender": {
-          "type": "string"
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
+        },
+        "intention": {
+          "description": "Dating intention",
+          "type": "string",
+          "enum": [
+            "long_term_partner",
+            "long_term_open_to_short",
+            "short_term_open_to_long",
+            "short_term_fun",
+            "new_friends",
+            "still_figuring_out"
+          ]
         },
         "name": {
           "type": "string"
         },
         "target_gender": {
-          "type": "string"
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
         }
       }
     },
@@ -455,16 +502,37 @@ const docTemplate = `{
           "type": "string"
         },
         "gender": {
-          "type": "string"
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
         },
         "id": {
           "type": "string"
+        },
+        "intention": {
+          "type": "string",
+          "enum": [
+            "long_term_partner",
+            "long_term_open_to_short",
+            "short_term_open_to_long",
+            "short_term_fun",
+            "new_friends",
+            "still_figuring_out"
+          ]
         },
         "name": {
           "type": "string"
         },
         "target_gender": {
-          "type": "string"
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3
+          ]
         },
         "updated_at": {
           "type": "string"
