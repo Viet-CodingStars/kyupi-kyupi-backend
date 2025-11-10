@@ -58,8 +58,7 @@ func (r *UserRepo) GetByEmail(email string) (*models.User, error) {
 	`
 	user := &models.User{}
 
-	// Dùng NullInt32 và NullString để scan các trường có thể là NULL
-	var targetGender sql.NullInt32
+	var targetGender sql.NullString // THAY ĐỔI
 	var bio sql.NullString
 	var avatarURL sql.NullString
 
@@ -75,9 +74,8 @@ func (r *UserRepo) GetByEmail(email string) (*models.User, error) {
 		return nil, err
 	}
 
-	// Chuyển đổi từ Nullable sang non-nullable
 	if targetGender.Valid {
-		user.TargetGender = int(targetGender.Int32)
+		user.TargetGender = targetGender.String // THAY ĐỔI
 	}
 	if bio.Valid {
 		user.Bio = bio.String
@@ -97,8 +95,7 @@ func (r *UserRepo) GetByID(id uuid.UUID) (*models.User, error) {
 	`
 	user := &models.User{}
 
-	// Dùng NullInt32 và NullString để scan các trường có thể là NULL
-	var targetGender sql.NullInt32
+	var targetGender sql.NullString // THAY ĐỔI
 	var bio sql.NullString
 	var avatarURL sql.NullString
 
@@ -114,9 +111,8 @@ func (r *UserRepo) GetByID(id uuid.UUID) (*models.User, error) {
 		return nil, err
 	}
 
-	// Chuyển đổi từ Nullable sang non-nullable
 	if targetGender.Valid {
-		user.TargetGender = int(targetGender.Int32)
+		user.TargetGender = targetGender.String // THAY ĐỔI
 	}
 	if bio.Valid {
 		user.Bio = bio.String

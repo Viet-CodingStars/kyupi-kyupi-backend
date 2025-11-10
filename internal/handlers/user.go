@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/auth"
@@ -42,7 +43,7 @@ type SignUpRequest struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 	Name      string `json:"name"`
-	Gender    int    `json:"gender"`
+	Gender    string `json:"gender"`
 	BirthDate string `json:"birth_date"` // Nhận vào string "YYYY-MM-DD" để validate
 }
 
@@ -71,16 +72,20 @@ type MessageResponse struct {
 // UpdateUserRequest represents the update user request payload.
 type UpdateUserRequest struct {
 	Name         *string `json:"name,omitempty"`
-	Gender       *int    `json:"gender,omitempty"`       // Đổi sang *int
+	Gender       *string `json:"gender,omitempty"`
 	BirthDate    *string `json:"birth_date,omitempty"` // Vẫn là *string "YYYY-MM-DD"
 	Bio          *string `json:"bio,omitempty"`
 	AvatarURL    *string `json:"avatar_url,omitempty"`
-	TargetGender *int    `json:"target_gender,omitempty"` // Thêm *int
+	TargetGender *string `json:"target_gender,omitempty"`
 }
 
-// validateGender checks if gender is 1, 2, or 3
-func validateGender(gender int) bool {
-	return gender == 1 || gender == 2 || gender == 3
+// validateGender checks if gender is "male", "female", or "others"
+func validateGender(gender string) (string, bool) {
+	g := strings.ToLower(gender)
+	if g == "male" || g == "female" || g == "others" {
+		return g, true
+	}
+	return "", false
 }
 
 // validateAge checks if birthdate is at least 18 years ago
@@ -183,12 +188,14 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 		return
 	}
 
-	if req.Email == "" || req.Password == "" || req.Name == "" || req.BirthDate == "" {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "email, password, name, and birth_date are required"})
+	if req.Email == "" || req.Password == "" || req.Name == "" || req.BirthDate == "" || req.Gender == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "email, password, name, gender, and birth_date are required"})
 		return
 	}
-	if !validateGender(req.Gender) {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid gender (must be 1, 2, or 3)"})
+
+	validGender, ok := validateGender(req.Gender)
+	if !ok {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid gender (must be 'male', 'female', or 'others')"})
 		return
 	}
 
@@ -213,7 +220,7 @@ func (h *UserHandler) SignUp(c *gin.Context) {
 		Email:        req.Email,
 		PasswordHash: hashedPassword,
 		Name:         req.Name,
-		Gender:       req.Gender,
+		Gender:       validGender,
 		BirthDate:    birthDate,
 	}
 
@@ -353,11 +360,12 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		user.Name = *req.Name
 	}
 	if req.Gender != nil {
-		if !validateGender(*req.Gender) {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid gender (must be 1, 2, or 3)"})
+		validGender, ok := validateGender(*req.Gender)
+		if !ok {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid gender (must be 'male', 'female', or 'others')"})
 			return
 		}
-		user.Gender = *req.Gender
+		user.Gender = validGender
 	}
 	if req.BirthDate != nil {
 		birthDate, err := parseBirthDate(*req.BirthDate)
@@ -378,11 +386,12 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		user.AvatarURL = *req.AvatarURL
 	}
 	if req.TargetGender != nil {
-		if !validateGender(*req.TargetGender) {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid target_gender (must be 1, 2, or 3)"})
+		validGender, ok := validateGender(*req.TargetGender)
+		if !ok {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid target_gender (must be 'male', 'female', or 'others')"})
 			return
 		}
-		user.TargetGender = *req.TargetGender
+		user.TargetGender = validGender
 	}
 
 	if err := h.userRepo.Update(user); err != nil {

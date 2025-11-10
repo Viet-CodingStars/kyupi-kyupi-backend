@@ -394,7 +394,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "gender": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -426,15 +426,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "gender": {
-                    "description": "Đổi sang *int",
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
                 "target_gender": {
-                    "description": "Thêm *int",
-                    "type": "integer"
+                    "type": "string"
                 }
             }
         },
@@ -457,7 +455,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "gender": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "id": {
                     "type": "string"
@@ -466,7 +464,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "target_gender": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"

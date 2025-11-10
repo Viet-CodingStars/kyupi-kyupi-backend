@@ -12,9 +12,9 @@ type User struct {
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"-"`
 	Name         string    `json:"name"`
-	Gender       int       `json:"gender"`
+	Gender       string    `json:"gender"`
 	BirthDate    time.Time `json:"birth_date"`
-	TargetGender int       `json:"target_gender,omitempty"`
+	TargetGender string    `json:"target_gender,omitempty"`
 	Bio          string    `json:"bio,omitempty"`
 	AvatarURL    string    `json:"avatar_url,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`

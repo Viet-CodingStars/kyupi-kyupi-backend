@@ -31,7 +31,7 @@ definitions:
       email:
         type: string
       gender:
-        type: integer
+        type: string
       name:
         type: string
       password:
@@ -52,13 +52,11 @@ definitions:
         description: Vẫn là *string "YYYY-MM-DD"
         type: string
       gender:
-        description: Đổi sang *int
-        type: integer
+        type: string
       name:
         type: string
       target_gender:
-        description: Thêm *int
-        type: integer
+        type: string
     type: object
   models.User:
     properties:
@@ -73,13 +71,13 @@ definitions:
       email:
         type: string
       gender:
-        type: integer
+        type: string
       id:
         type: string
       name:
         type: string
       target_gender:
-        type: integer
+        type: string
       updated_at:
         type: string
     type: object
