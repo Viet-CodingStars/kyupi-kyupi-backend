@@ -26,18 +26,26 @@ definitions:
   handlers.SignUpRequest:
     properties:
       birth_date:
-        description: Nhận vào string "YYYY-MM-DD" để validate
+        description: Accepts string "YYYY-MM-DD" for validation (user must be at least 18 years old)
         type: string
       email:
         type: string
       gender:
-        type: string
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
       name:
         type: string
       password:
         type: string
       target_gender:
-        type: string
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
     type: object
   handlers.StatusResponse:
     properties:
@@ -51,14 +59,22 @@ definitions:
       bio:
         type: string
       birth_date:
-        description: Vẫn là *string "YYYY-MM-DD"
+        description: Remains a *string in "YYYY-MM-DD" format (must be >= 18 years old)
         type: string
       gender:
-        type: string
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
       name:
         type: string
       target_gender:
-        type: string
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
     type: object
   models.User:
     properties:
@@ -73,13 +89,21 @@ definitions:
       email:
         type: string
       gender:
-        type: string
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
       id:
         type: string
       name:
         type: string
       target_gender:
-        type: string
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
       updated_at:
         type: string
     type: object

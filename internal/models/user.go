@@ -12,11 +12,27 @@ type User struct {
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"-"`
 	Name         string    `json:"name"`
-	Gender       string    `json:"gender"`
+	Gender       int       `json:"gender"`
 	BirthDate    time.Time `json:"birth_date"`
-	TargetGender string    `json:"target_gender,omitempty"`
+	TargetGender *int      `json:"target_gender,omitempty"`
 	Bio          string    `json:"bio,omitempty"`
 	AvatarURL    string    `json:"avatar_url,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+const (
+	GenderMale   = 1
+	GenderFemale = 2
+	GenderOthers = 3
+)
+
+// IsValidGender returns true when the provided gender matches a supported enum value.
+func IsValidGender(g int) bool {
+	switch g {
+	case GenderMale, GenderFemale, GenderOthers:
+		return true
+	default:
+		return false
+	}
 }

@@ -146,6 +146,8 @@ Protected endpoints (send `Authorization: Bearer <token>`):
 
 Tokens expire after 24 hours by default. Logging out simply means discarding the token on the client.
 
+Gender-related request/response payloads use integer enums: `1` = male, `2` = female, `3` = others. Provide values in this range for both `gender` and `target_gender` fields.
+
 ---
 
 ## Testing

@@ -376,20 +376,33 @@
             "type": "object",
             "properties": {
                 "birth_date": {
-                    "description": "Nhận vào string \"YYYY-MM-DD\" để validate",
+                    "description": "Accepts string \"YYYY-MM-DD\" for validation (user must be at least 18 years old)",
                     "type": "string"
                 },
                 "email": {
                     "type": "string"
                 },
                 "gender": {
-                    "type": "string"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
                 },
                 "name": {
                     "type": "string"
                 },
                 "password": {
                     "type": "string"
+                },
+                "target_gender": {
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
                 }
             }
         },
@@ -411,17 +424,27 @@
                     "type": "string"
                 },
                 "birth_date": {
-                    "description": "Vẫn là *string \"YYYY-MM-DD\"",
+                    "description": "Remains a *string in \"YYYY-MM-DD\" format (must be >= 18 years old)",
                     "type": "string"
                 },
                 "gender": {
-                    "type": "string"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
                 },
                 "name": {
                     "type": "string"
                 },
                 "target_gender": {
-                    "type": "string"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
                 }
             }
         },
@@ -444,7 +467,12 @@
                     "type": "string"
                 },
                 "gender": {
-                    "type": "string"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
                 },
                 "id": {
                     "type": "string"
@@ -453,7 +481,12 @@
                     "type": "string"
                 },
                 "target_gender": {
-                    "type": "string"
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        2,
+                        3
+                    ]
                 },
                 "updated_at": {
                     "type": "string"
