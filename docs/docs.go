@@ -393,21 +393,21 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns all matches for the authenticated user.",
+                "description": "Returns all matches for the authenticated user with matched user information.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Matches"
                 ],
-                "summary": "Get all matches",
+                "summary": "Get all matches with user details",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Match"
+                                "$ref": "#/definitions/handlers.MatchWithUser"
                             }
                         }
                     },
@@ -497,6 +497,20 @@ const docTemplate = `{
                 },
                 "matched": {
                     "type": "boolean"
+                }
+            }
+        },
+        "handlers.MatchWithUser": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "matched_user": {
+                    "$ref": "#/definitions/models.User"
                 }
             }
         },

@@ -19,12 +19,22 @@ func TestGetMatches(t *testing.T) {
 
 	t.Run("successful get matches", func(t *testing.T) {
 		mockMatchRepo := newMockMatchRepo()
+		mockUserRepo := newMockUserRepo()
 		handler := &MatchHandler{
 			matchRepo: mockMatchRepo,
+			userRepo:  mockUserRepo,
 		}
 
 		userID := uuid.New()
 		otherUserID := uuid.New()
+
+		// Create the matched user
+		otherUser := &models.User{
+			ID:    otherUserID,
+			Email: "other@example.com",
+			Name:  "Other User",
+		}
+		mockUserRepo.users[otherUser.Email] = otherUser
 
 		// Create some matches
 		match1 := &models.Match{
@@ -50,7 +60,7 @@ func TestGetMatches(t *testing.T) {
 			t.Fatalf("expected status 200, got %d", w.Code)
 		}
 
-		var matches []*models.Match
+		var matches []MatchWithUser
 		if err := json.Unmarshal(w.Body.Bytes(), &matches); err != nil {
 			t.Fatalf("failed to decode response: %v", err)
 		}
@@ -58,15 +68,20 @@ func TestGetMatches(t *testing.T) {
 		if len(matches) != 1 {
 			t.Fatalf("expected 1 match, got %d", len(matches))
 		}
-		if matches[0].User1ID != userID {
-			t.Fatalf("expected user1_id %s, got %s", userID, matches[0].User1ID)
+		if matches[0].MatchedUser.ID != otherUserID {
+			t.Fatalf("expected matched user id %s, got %s", otherUserID, matches[0].MatchedUser.ID)
+		}
+		if matches[0].MatchedUser.Name != "Other User" {
+			t.Fatalf("expected matched user name 'Other User', got %s", matches[0].MatchedUser.Name)
 		}
 	})
 
 	t.Run("no matches returns empty array", func(t *testing.T) {
 		mockMatchRepo := newMockMatchRepo()
+		mockUserRepo := newMockUserRepo()
 		handler := &MatchHandler{
 			matchRepo: mockMatchRepo,
+			userRepo:  mockUserRepo,
 		}
 
 		userID := uuid.New()
@@ -85,7 +100,7 @@ func TestGetMatches(t *testing.T) {
 			t.Fatalf("expected status 200, got %d", w.Code)
 		}
 
-		var matches []*models.Match
+		var matches []MatchWithUser
 		if err := json.Unmarshal(w.Body.Bytes(), &matches); err != nil {
 			t.Fatalf("failed to decode response: %v", err)
 		}
@@ -97,8 +112,10 @@ func TestGetMatches(t *testing.T) {
 
 	t.Run("unauthenticated request", func(t *testing.T) {
 		mockMatchRepo := newMockMatchRepo()
+		mockUserRepo := newMockUserRepo()
 		handler := &MatchHandler{
 			matchRepo: mockMatchRepo,
+			userRepo:  mockUserRepo,
 		}
 
 		w := httptest.NewRecorder()

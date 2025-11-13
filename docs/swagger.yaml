@@ -33,6 +33,15 @@ definitions:
       matched:
         type: boolean
     type: object
+  handlers.MatchWithUser:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      matched_user:
+        $ref: '#/definitions/models.User'
+    type: object
   handlers.MessageResponse:
     properties:
       message:
@@ -365,7 +374,8 @@ paths:
       - Likes
   /api/v1/matches:
     get:
-      description: Returns all matches for the authenticated user.
+      description: Returns all matches for the authenticated user with matched user
+        information.
       produces:
       - application/json
       responses:
@@ -373,7 +383,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Match'
+              $ref: '#/definitions/handlers.MatchWithUser'
             type: array
         "401":
           description: Unauthorized
@@ -385,7 +395,7 @@ paths:
             $ref: '#/definitions/handlers.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get all matches
+      summary: Get all matches with user details
       tags:
       - Matches
   /health:
