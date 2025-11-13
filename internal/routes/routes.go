@@ -42,6 +42,8 @@ func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStora
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	userHandler := handlers.NewUserHandler(db, cfg.JWTSecret, avatarStorage)
+	likeHandler := handlers.NewLikeHandler(db)
+	matchHandler := handlers.NewMatchHandler(db)
 	authMw := middleware.AuthMiddleware(cfg.JWTSecret)
 
 	api := router.Group("/api")
@@ -57,6 +59,14 @@ func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStora
 			users.PATCH("/profile", userHandler.UpdateProfile)
 			users.PUT("/profile", userHandler.UpdateProfile)
 			users.POST("/profile/avatar", userHandler.UploadAvatar)
+		}
+
+		// v1 API routes
+		v1 := api.Group("/v1")
+		v1.Use(authMw)
+		{
+			v1.POST("/likes", likeHandler.CreateLike)
+			v1.GET("/matches", matchHandler.GetMatches)
 		}
 	}
 
