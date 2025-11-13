@@ -5,8 +5,8 @@ import (
   "database/sql"
   "time"
 
-  _ "github.com/lib/pq"
   "github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/config"
+  _ "github.com/lib/pq"
 )
 
 // Connect opens a sql.DB to Postgres using the provided config and validates connectivity.
@@ -51,13 +51,33 @@ func initSchema(db *sql.DB) error {
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
-    gender VARCHAR(50),
-    birth_date DATE,
+    gender SMALLINT NOT NULL CHECK (gender IN (1, 2, 3)),
+    birth_date DATE NOT NULL,
+    target_gender SMALLINT CHECK (target_gender IN (1, 2, 3)),
+    intention VARCHAR(50) NOT NULL DEFAULT 'still_figuring_out' CHECK (intention IN (
+      'long_term_partner',
+      'long_term_open_to_short',
+      'short_term_open_to_long',
+      'short_term_fun',
+      'new_friends',
+      'still_figuring_out'
+    )),
     bio TEXT,
     avatar_url TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
   );
+  ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS intention VARCHAR(50) NOT NULL DEFAULT 'still_figuring_out';
+  ALTER TABLE users
+    ADD CONSTRAINT IF NOT EXISTS chk_users_intention CHECK (intention IN (
+      'long_term_partner',
+      'long_term_open_to_short',
+      'short_term_open_to_long',
+      'short_term_fun',
+      'new_friends',
+      'still_figuring_out'
+    ));
   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
   
   CREATE TABLE IF NOT EXISTS likes (

@@ -56,12 +56,37 @@ definitions:
     type: object
   handlers.SignUpRequest:
     properties:
+      birth_date:
+        description: Accepts string "YYYY-MM-DD" for validation (user must be at least 18 years old)
+        type: string
+      intention:
+        description: Optional dating intention; defaults to still_figuring_out
+        enum:
+        - long_term_partner
+        - long_term_open_to_short
+        - short_term_open_to_long
+        - short_term_fun
+        - new_friends
+        - still_figuring_out
+        type: string
       email:
         type: string
+      gender:
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
       name:
         type: string
       password:
         type: string
+      target_gender:
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
     type: object
   handlers.StatusResponse:
     properties:
@@ -75,11 +100,32 @@ definitions:
       bio:
         type: string
       birth_date:
+        description: Remains a *string in "YYYY-MM-DD" format (must be >= 18 years old)
         type: string
       gender:
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
+      intention:
+        description: Dating intention
+        enum:
+        - long_term_partner
+        - long_term_open_to_short
+        - short_term_open_to_long
+        - short_term_fun
+        - new_friends
+        - still_figuring_out
         type: string
       name:
         type: string
+      target_gender:
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
     type: object
   models.Like:
     properties:
@@ -123,11 +169,30 @@ definitions:
       email:
         type: string
       gender:
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
+      intention:
+        enum:
+        - long_term_partner
+        - long_term_open_to_short
+        - short_term_open_to_long
+        - short_term_fun
+        - new_friends
+        - still_figuring_out
         type: string
       id:
         type: string
       name:
         type: string
+      target_gender:
+        enum:
+        - 1
+        - 2
+        - 3
+        type: integer
       updated_at:
         type: string
     type: object

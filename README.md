@@ -2,9 +2,9 @@
 
 KyupiKyupi is a matching application. This repository contains the Go service that handles:
 
-- User registration and login with bcrypt-hashed passwords
+- User registration and login with bcrypt-hashed passwords (users must be 18+ years old)
 - JWT-based session management (24-hour access tokens)
-- Authenticated profile retrieval and updates (name, gender, birth_date, bio, avatar_url)
+- Authenticated profile retrieval and updates (name, gender, birth_date, bio, avatar_url, target_gender, intention)
 - User logout (client-side token discard)
 - Gin-powered HTTP server and routing
 
@@ -134,7 +134,7 @@ Public endpoints:
 
 - `GET /` – welcome payload
 - `GET /health` – readiness probe
-- `POST /api/users` – create user account, returns JWT
+- `POST /api/users` – create user account, returns JWT (requires user to be 18+ years old)
 - `POST /api/users/sign_in` – authenticate, returns JWT
 
 Protected endpoints (send `Authorization: Bearer <token>`):
@@ -145,6 +145,28 @@ Protected endpoints (send `Authorization: Bearer <token>`):
 - `DELETE /api/users/sign_out` – sign out (client-side token discard)
 
 Tokens expire after 24 hours by default. Logging out simply means discarding the token on the client.
+
+### Field Specifications
+
+**Gender Enums:**
+Gender-related request/response payloads use integer enums:
+- `1` = male
+- `2` = female
+- `3` = others
+
+Both `gender` (required) and `target_gender` (optional) fields accept these values.
+
+**Intention Values:**
+The `intention` field (optional, defaults to "still_figuring_out") accepts one of:
+- `long_term_partner` – Looking for a long-term partner
+- `long_term_open_to_short` – Long-term relationship, open to short
+- `short_term_open_to_long` – Short-term fun, open to long
+- `short_term_fun` – Short-term fun
+- `new_friends` – New friends
+- `still_figuring_out` – Still figuring it out (default)
+
+**Age Requirement:**
+Users must be at least 18 years old to register. The `birth_date` field is validated during signup to ensure the user meets this requirement.
 
 ---
 
