@@ -43,7 +43,7 @@ func Connect(cfg *config.Config) (*sql.DB, error) {
   return db, nil
 }
 
-// initSchema creates the users table if it doesn't exist
+// initSchema creates the users table if it doesn't exist and runs migrations
 func initSchema(db *sql.DB) error {
   schema := `
   CREATE TABLE IF NOT EXISTS users (
@@ -53,31 +53,42 @@ func initSchema(db *sql.DB) error {
     name VARCHAR(255) NOT NULL,
     gender SMALLINT NOT NULL CHECK (gender IN (1, 2, 3)),
     birth_date DATE NOT NULL,
-    target_gender SMALLINT CHECK (target_gender IN (1, 2, 3)),
-    intention VARCHAR(50) NOT NULL DEFAULT 'still_figuring_out' CHECK (intention IN (
-      'long_term_partner',
-      'long_term_open_to_short',
-      'short_term_open_to_long',
-      'short_term_fun',
-      'new_friends',
-      'still_figuring_out'
-    )),
-    bio TEXT,
-    avatar_url TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
   );
-  ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS intention VARCHAR(50) NOT NULL DEFAULT 'still_figuring_out';
-  ALTER TABLE users
-    ADD CONSTRAINT IF NOT EXISTS chk_users_intention CHECK (intention IN (
-      'long_term_partner',
-      'long_term_open_to_short',
-      'short_term_open_to_long',
-      'short_term_fun',
-      'new_friends',
-      'still_figuring_out'
-    ));
+
+  -- Add missing columns for existing tables
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS target_gender SMALLINT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS intention VARCHAR(50) NOT NULL DEFAULT 'still_figuring_out';
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
+  -- Add constraints if they don't exist
+  DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'chk_users_target_gender'
+    ) THEN
+      ALTER TABLE users ADD CONSTRAINT chk_users_target_gender
+        CHECK (target_gender IN (1, 2, 3));
+    END IF;
+
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'chk_users_intention'
+    ) THEN
+      ALTER TABLE users ADD CONSTRAINT chk_users_intention
+        CHECK (intention IN (
+          'long_term_partner',
+          'long_term_open_to_short',
+          'short_term_open_to_long',
+          'short_term_fun',
+          'new_friends',
+          'still_figuring_out'
+        ));
+    END IF;
+  END $$;
+
+  -- Create indexes
   CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
   `
   _, err := db.Exec(schema)
