@@ -8,15 +8,17 @@ import (
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/config"
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/handlers"
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/middleware"
+	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/repo"
 	"github.com/Viet-CodingStars/kyupi-kyupi-backend/internal/storage"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // NewRouter creates the Gin engine for the application.
-func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStorage) http.Handler {
+func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStorage, mongoClient *mongo.Client) http.Handler {
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -44,6 +46,13 @@ func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStora
 	userHandler := handlers.NewUserHandler(db, cfg.JWTSecret, avatarStorage)
 	likeHandler := handlers.NewLikeHandler(db)
 	matchHandler := handlers.NewMatchHandler(db)
+	
+	// MongoDB handlers
+	mongoDB := mongoClient.Database(cfg.MongoDatabase)
+	messageRepo := repo.NewMessageRepo(mongoDB)
+	matchRepo := repo.NewMatchRepo(db)
+	chatHandler := handlers.NewChatHandler(messageRepo, matchRepo)
+	
 	authMw := middleware.AuthMiddleware(cfg.JWTSecret)
 
 	api := router.Group("/api")
@@ -67,6 +76,10 @@ func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStora
 		{
 			v1.POST("/likes", likeHandler.CreateLike)
 			v1.GET("/matches", matchHandler.GetMatches)
+			
+			// Chat endpoints
+			v1.POST("/messages", chatHandler.SendMessage)
+			v1.GET("/matches/:match_id/messages", chatHandler.GetMessages)
 		}
 	}
 
