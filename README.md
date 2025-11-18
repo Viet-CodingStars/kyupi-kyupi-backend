@@ -6,9 +6,11 @@ KyupiKyupi is a matching application. This repository contains the Go service th
 - JWT-based session management (24-hour access tokens)
 - Authenticated profile retrieval and updates (name, gender, birth_date, bio, avatar_url, target_gender, intention)
 - User logout (client-side token discard)
+- Like and match functionality
+- Real-time chat messaging between matched users
 - Gin-powered HTTP server and routing
 
-The data layer is PostgreSQL, accessed through `database/sql`. Docker Compose spins up PostgreSQL (and a MongoDB container reserved for future features).
+The data layer uses PostgreSQL for relational data (users, matches, likes) and MongoDB for chat messages. Docker Compose spins up both database systems.
 
 ---
 
@@ -144,6 +146,16 @@ Protected endpoints (send `Authorization: Bearer <token>`):
 - `POST /api/users/profile/avatar` – upload or replace the avatar image (multipart/form-data with `avatar` field)
 - `DELETE /api/users/sign_out` – sign out (client-side token discard)
 
+Matching endpoints:
+
+- `POST /api/v1/likes` – like or pass on a user
+- `GET /api/v1/matches` – get all matches with user details
+
+Chat endpoints (requires authentication and active match):
+
+- `POST /api/v1/messages` – send a message to a matched user
+- `GET /api/v1/matches/:match_id/messages` – get all messages for a specific match
+
 Tokens expire after 24 hours by default. Logging out simply means discarding the token on the client.
 
 ### Field Specifications
@@ -184,15 +196,25 @@ GitHub Actions (`.github/workflows/ci.yml`) runs `go mod tidy`, `go test ./...`,
 
 - `main.go` – application bootstrap, HTTP server, DB setup
 - `internal/config` – environment-driven settings
-- `internal/db` – Database connector
-- `internal/models` – domain models (e.g., `User`)
-- `internal/repo` – data access layer
+- `internal/db` – Database connectors (PostgreSQL and MongoDB)
+- `internal/models` – domain models (e.g., `User`, `Match`, `Message`)
+- `internal/repo` – data access layer for PostgreSQL and MongoDB
 - `internal/auth` – JWT helper functions
 - `internal/middleware` – authentication middleware for Gin
-- `internal/handlers` – Gin handlers for auth/profile/health endpoints
+- `internal/handlers` – Gin handlers for auth/profile/health/match/chat endpoints
 - `internal/routes` – Gin router wiring and middleware composition
 - `docker-compose.yml` – local development stack
 - `Makefile` – convenience tasks
+
+## Chat Feature
+
+The chat feature allows matched users to exchange messages:
+
+- Messages are stored in MongoDB in the `messages` collection
+- Each message contains: `match_id`, `sender_id`, `receiver_id`, `content`, and `created_at`
+- Users can only send messages to users they have an active match with
+- Users can only view messages for matches they are part of
+- All chat endpoints require authentication via JWT token
 
 ---
 
