@@ -50,7 +50,6 @@ func TestSendMessage(t *testing.T) {
 
 		userID := uuid.New()
 		receiverID := uuid.New()
-		matchID := uuid.New()
 
 		// Create a match between users
 		match := &models.Match{
@@ -63,7 +62,7 @@ func TestSendMessage(t *testing.T) {
 		c, _ := gin.CreateTestContext(w)
 
 		reqBody := SendMessageRequest{
-			MatchID:    matchID.String(),
+			MatchID:    match.ID.String(),
 			ReceiverID: receiverID.String(),
 			Content:    "Hello, this is a test message!",
 		}
@@ -182,15 +181,14 @@ func TestGetMessages(t *testing.T) {
 
 		userID := uuid.New()
 		receiverID := uuid.New()
-		matchID := uuid.New()
 
 		// Create a match between users
 		match := &models.Match{
-			ID:      matchID,
 			User1ID: userID,
 			User2ID: receiverID,
 		}
-		mockMatchRepo.matches = append(mockMatchRepo.matches, match)
+		mockMatchRepo.Create(match)
+		matchID := match.ID
 
 		// Add some messages
 		msg1 := &models.Message{
@@ -263,15 +261,14 @@ func TestGetMessages(t *testing.T) {
 
 		userID := uuid.New()
 		receiverID := uuid.New()
-		matchID := uuid.New()
 
 		// Create a match between users
 		match := &models.Match{
-			ID:      matchID,
 			User1ID: userID,
 			User2ID: receiverID,
 		}
-		mockMatchRepo.matches = append(mockMatchRepo.matches, match)
+		mockMatchRepo.Create(match)
+		matchID := match.ID
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
