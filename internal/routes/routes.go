@@ -45,6 +45,7 @@ func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStora
 
 	userHandler := handlers.NewUserHandler(db, cfg.JWTSecret, avatarStorage)
 	likeHandler := handlers.NewLikeHandler(db)
+	passHandler := handlers.NewPassHandler(db)
 	matchHandler := handlers.NewMatchHandler(db)
 	
 	// MongoDB handlers
@@ -70,16 +71,17 @@ func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStora
 			users.POST("/profile/avatar", userHandler.UploadAvatar)
 		}
 
-		// v1 API routes
-		v1 := api.Group("/v1")
-		v1.Use(authMw)
+		// Protected API routes
+		protected := api.Group("")
+		protected.Use(authMw)
 		{
-			v1.POST("/likes", likeHandler.CreateLike)
-			v1.GET("/matches", matchHandler.GetMatches)
+			protected.POST("/likes", likeHandler.CreateLike)
+			protected.POST("/passes", passHandler.CreatePass)
+			protected.GET("/matches", matchHandler.GetMatches)
 			
 			// Chat endpoints
-			v1.POST("/messages", chatHandler.SendMessage)
-			v1.GET("/matches/:match_id/messages", chatHandler.GetMessages)
+			protected.POST("/messages", chatHandler.SendMessage)
+			protected.GET("/matches/:match_id/messages", chatHandler.GetMessages)
 		}
 	}
 

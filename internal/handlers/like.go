@@ -50,20 +50,20 @@ type LikeResponse struct {
 	Matched bool          `json:"matched"`
 }
 
-// CreateLike handles creating a like or pass (POST /api/v1/likes).
-// @Summary Create a like or pass
-// @Description Creates a like or pass for a target user. If both users like each other, a match is automatically created.
+// CreateLike handles creating a like (POST /api/likes).
+// @Summary Create a like
+// @Description Creates a like for a target user. If both users like each other, a match is automatically created. For passing on a user, use the /api/passes endpoint instead.
 // @Tags Likes
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param payload body CreateLikeRequest true "Like/Pass payload"
+// @Param payload body CreateLikeRequest true "Like payload"
 // @Success 201 {object} LikeResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 401 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/likes [post]
+// @Router /api/likes [post]
 func (h *LikeHandler) CreateLike(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c.Request.Context())
 	if !ok {
