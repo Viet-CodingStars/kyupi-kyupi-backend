@@ -148,13 +148,14 @@ Protected endpoints (send `Authorization: Bearer <token>`):
 
 Matching endpoints:
 
-- `POST /api/v1/likes` – like or pass on a user
-- `GET /api/v1/matches` – get all matches with user details
+- `POST /api/likes` – like a user
+- `POST /api/passes` – pass on a user
+- `GET /api/matches` – get all matches with user details
 
 Chat endpoints (requires authentication and active match):
 
-- `POST /api/v1/messages` – send a message to a matched user
-- `GET /api/v1/matches/:match_id/messages` – get all messages for a specific match
+- `POST /api/messages` – send a message to a matched user
+- `GET /api/matches/:match_id/messages` – get all messages for a specific match
 
 Tokens expire after 24 hours by default. Logging out simply means discarding the token on the client.
 

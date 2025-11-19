@@ -36,7 +36,7 @@ type SendMessageRequest struct {
 	Content    string `json:"content" binding:"required"`
 }
 
-// SendMessage sends a message to a matched user (POST /api/v1/messages).
+// SendMessage sends a message to a matched user (POST /api/messages).
 // @Summary Send a chat message
 // @Description Send a message to a matched user. Requires authentication and active match.
 // @Tags Chat
@@ -49,7 +49,7 @@ type SendMessageRequest struct {
 // @Failure 401 {object} ErrorResponse
 // @Failure 403 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/messages [post]
+// @Router /api/messages [post]
 func (h *ChatHandler) SendMessage(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c.Request.Context())
 	if !ok {
@@ -104,7 +104,7 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 	c.JSON(http.StatusCreated, message)
 }
 
-// GetMessages retrieves all messages for a specific match (GET /api/v1/matches/:match_id/messages).
+// GetMessages retrieves all messages for a specific match (GET /api/matches/:match_id/messages).
 // @Summary Get chat messages for a match
 // @Description Get all messages for a specific match. Requires authentication and active match.
 // @Tags Chat
@@ -116,7 +116,7 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 // @Failure 401 {object} ErrorResponse
 // @Failure 403 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/matches/{match_id}/messages [get]
+// @Router /api/matches/{match_id}/messages [get]
 func (h *ChatHandler) GetMessages(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c.Request.Context())
 	if !ok {

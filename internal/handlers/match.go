@@ -30,7 +30,7 @@ type MatchWithUser struct {
 	CreatedAt   string       `json:"created_at"`
 }
 
-// GetMatches retrieves all matches for the current user (GET /api/v1/matches).
+// GetMatches retrieves all matches for the current user (GET /api/matches).
 // @Summary Get all matches with user details
 // @Description Returns all matches for the authenticated user with matched user information.
 // @Tags Matches
@@ -39,7 +39,7 @@ type MatchWithUser struct {
 // @Success 200 {array} MatchWithUser
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /api/v1/matches [get]
+// @Router /api/matches [get]
 func (h *MatchHandler) GetMatches(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c.Request.Context())
 	if !ok {
