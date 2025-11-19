@@ -65,7 +65,7 @@ func main() {
 	addr := cfg.Addr()
 	srv := &http.Server{
 		Addr:    addr,
-		Handler: routes.NewRouter(pg, cfg, avatarStorage),
+		Handler: routes.NewRouter(pg, cfg, avatarStorage, mongoClient),
 	}
 
 	log.Printf("starting server (env=%s) on %s", cfg.Env, addr)

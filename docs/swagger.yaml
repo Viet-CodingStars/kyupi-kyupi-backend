@@ -47,6 +47,19 @@ definitions:
       message:
         type: string
     type: object
+  handlers.SendMessageRequest:
+    properties:
+      content:
+        type: string
+      match_id:
+        type: string
+      receiver_id:
+        type: string
+    required:
+    - content
+    - match_id
+    - receiver_id
+    type: object
   handlers.SignInRequest:
     properties:
       email:
@@ -57,35 +70,19 @@ definitions:
   handlers.SignUpRequest:
     properties:
       birth_date:
-        description: Accepts string "YYYY-MM-DD" for validation (user must be at least 18 years old)
-        type: string
-      intention:
-        description: Optional dating intention; defaults to still_figuring_out
-        enum:
-        - long_term_partner
-        - long_term_open_to_short
-        - short_term_open_to_long
-        - short_term_fun
-        - new_friends
-        - still_figuring_out
+        description: Accepts string "YYYY-MM-DD" for validation
         type: string
       email:
         type: string
       gender:
-        enum:
-        - 1
-        - 2
-        - 3
         type: integer
+      intention:
+        type: string
       name:
         type: string
       password:
         type: string
       target_gender:
-        enum:
-        - 1
-        - 2
-        - 3
         type: integer
     type: object
   handlers.StatusResponse:
@@ -100,31 +97,15 @@ definitions:
       bio:
         type: string
       birth_date:
-        description: Remains a *string in "YYYY-MM-DD" format (must be >= 18 years old)
+        description: Remains a *string in "YYYY-MM-DD" format
         type: string
       gender:
-        enum:
-        - 1
-        - 2
-        - 3
         type: integer
       intention:
-        description: Dating intention
-        enum:
-        - long_term_partner
-        - long_term_open_to_short
-        - short_term_open_to_long
-        - short_term_fun
-        - new_friends
-        - still_figuring_out
         type: string
       name:
         type: string
       target_gender:
-        enum:
-        - 1
-        - 2
-        - 3
         type: integer
     type: object
   models.Like:
@@ -156,6 +137,21 @@ definitions:
       user2_id:
         type: string
     type: object
+  models.Message:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      match_id:
+        type: string
+      receiver_id:
+        type: string
+      sender_id:
+        type: string
+    type: object
   models.User:
     properties:
       avatar_url:
@@ -169,29 +165,14 @@ definitions:
       email:
         type: string
       gender:
-        enum:
-        - 1
-        - 2
-        - 3
         type: integer
-      intention:
-        enum:
-        - long_term_partner
-        - long_term_open_to_short
-        - short_term_open_to_long
-        - short_term_fun
-        - new_friends
-        - still_figuring_out
-        type: string
       id:
+        type: string
+      intention:
         type: string
       name:
         type: string
       target_gender:
-        enum:
-        - 1
-        - 2
-        - 3
         type: integer
       updated_at:
         type: string
@@ -463,6 +444,87 @@ paths:
       summary: Get all matches with user details
       tags:
       - Matches
+  /api/v1/matches/{match_id}/messages:
+    get:
+      description: Get all messages for a specific match. Requires authentication
+        and active match.
+      parameters:
+      - description: Match ID
+        in: path
+        name: match_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Message'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get chat messages for a match
+      tags:
+      - Chat
+  /api/v1/messages:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to a matched user. Requires authentication and active
+        match.
+      parameters:
+      - description: Message details
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Message'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Send a chat message
+      tags:
+      - Chat
   /health:
     get:
       description: Returns OK when the service is healthy.

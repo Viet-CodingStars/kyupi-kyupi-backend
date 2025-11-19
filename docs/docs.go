@@ -426,6 +426,130 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/matches/{match_id}/messages": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all messages for a specific match. Requires authentication and active match.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get chat messages for a match",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Match ID",
+                        "name": "match_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Message"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/messages": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send a message to a matched user. Requires authentication and active match.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Send a chat message",
+                "parameters": [
+                    {
+                        "description": "Message details",
+                        "name": "message",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Returns OK when the service is healthy.",
@@ -445,31 +569,18 @@ const docTemplate = `{
                     }
                 }
             }
-          }
         }
-      }
     },
-    "/api/users": {
-      "post": {
-        "description": "Creates a new account and returns a JWT token for the user.",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Register a new user",
-        "parameters": [
-          {
-            "description": "User sign up payload",
-            "name": "payload",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/handlers.SignUpRequest"
+    "definitions": {
+        "handlers.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/models.User"
+                }
             }
         },
         "handlers.CreateLikeRequest": {
@@ -533,31 +644,52 @@ const docTemplate = `{
                 "message": {
                     "type": "string"
                 }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/handlers.AuthResponse"
             }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
+        },
+        "handlers.SendMessageRequest": {
+            "type": "object",
+            "required": [
+                "content",
+                "match_id",
+                "receiver_id"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "match_id": {
+                    "type": "string"
+                },
+                "receiver_id": {
+                    "type": "string"
+                }
             }
-          },
-          "409": {
-            "description": "Conflict",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
+        },
+        "handlers.SignInRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
             }
         },
         "handlers.SignUpRequest": {
             "type": "object",
             "properties": {
+                "birth_date": {
+                    "description": "Accepts string \"YYYY-MM-DD\" for validation",
+                    "type": "string"
+                },
                 "email": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "integer"
+                },
+                "intention": {
                     "type": "string"
                 },
                 "name": {
@@ -565,6 +697,9 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string"
+                },
+                "target_gender": {
+                    "type": "integer"
                 }
             }
         },
@@ -586,13 +721,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "birth_date": {
+                    "description": "Remains a *string in \"YYYY-MM-DD\" format",
                     "type": "string"
                 },
                 "gender": {
+                    "type": "integer"
+                },
+                "intention": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
+                },
+                "target_gender": {
+                    "type": "integer"
                 }
             }
         },
@@ -640,499 +782,68 @@ const docTemplate = `{
                 }
             }
         },
+        "models.Message": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "match_id": {
+                    "type": "string"
+                },
+                "receiver_id": {
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "string"
+                }
+            }
+        },
         "models.User": {
-          "type": "object",
-          "properties": {
-            "avatar_url": {
-              "type": "string"
-            },
-            "bio": {
-              "type": "string"
-            },
-            "birth_date": {
-              "type": "string"
-            },
-            "created_at": {
-              "type": "string"
-            },
-            "email": {
-              "type": "string"
-            },
-            "gender": {
-              "type": "string"
-            },
-            "id": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "updated_at": {
-              "type": "string"
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "bio": {
+                    "type": "string"
+                },
+                "birth_date": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "intention": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "target_gender": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
         }
-      }
-    },
-    "/api/users/profile": {
-      "get": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Returns the authenticated user's profile details.",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Users"
-        ],
-        "summary": "Get current user profile",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/models.User"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
-        }
-      },
-      "patch": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Applies partial or full updates to the authenticated user's profile.",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Users"
-        ],
-        "summary": "Update current user profile",
-        "parameters": [
-          {
-            "description": "Profile update payload",
-            "name": "payload",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/handlers.UpdateUserRequest"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/models.User"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
-        }
-      }
-    },
-    "/api/users/profile/avatar": {
-      "post": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Uploads an avatar image for the current user and updates the profile.",
-        "consumes": [
-          "multipart/form-data"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Users"
-        ],
-        "summary": "Upload avatar image",
-        "parameters": [
-          {
-            "type": "file",
-            "description": "Avatar image",
-            "name": "avatar",
-            "in": "formData",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/models.User"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
-        }
-      }
-    },
-    "/api/users/sign_in": {
-      "post": {
-        "description": "Verifies credentials and returns a JWT token.",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Authenticate a user",
-        "parameters": [
-          {
-            "description": "User sign in payload",
-            "name": "payload",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/handlers.SignInRequest"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/handlers.AuthResponse"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
-        }
-      }
-    },
-    "/api/users/sign_out": {
-      "delete": {
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "description": "Stateless logout helper that simply acknowledges the request.",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Sign out the current user",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/handlers.MessageResponse"
-            }
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "description": "Returns OK when the service is healthy.",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Health"
-        ],
-        "summary": "Health check",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/handlers.StatusResponse"
-            }
-          }
-        }
-      }
     }
-  },
-  "definitions": {
-    "handlers.AuthResponse": {
-      "type": "object",
-      "properties": {
-        "token": {
-          "type": "string"
-        },
-        "user": {
-          "$ref": "#/definitions/models.User"
-        }
-      }
-    },
-    "handlers.ErrorResponse": {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "string"
-        }
-      }
-    },
-    "handlers.MessageResponse": {
-      "type": "object",
-      "properties": {
-        "message": {
-          "type": "string"
-        }
-      }
-    },
-    "handlers.SignInRequest": {
-      "type": "object",
-      "properties": {
-        "email": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        }
-      }
-    },
-    "handlers.SignUpRequest": {
-      "type": "object",
-      "properties": {
-        "birth_date": {
-          "description": "Accepts string \"YYYY-MM-DD\" for validation (user must be at least 18 years old)",
-          "type": "string"
-        },
-        "intention": {
-          "description": "Optional dating intention; defaults to still_figuring_out",
-          "type": "string",
-          "enum": [
-            "long_term_partner",
-            "long_term_open_to_short",
-            "short_term_open_to_long",
-            "short_term_fun",
-            "new_friends",
-            "still_figuring_out"
-          ]
-        },
-        "email": {
-          "type": "string"
-        },
-        "gender": {
-          "type": "integer",
-          "enum": [
-            1,
-            2,
-            3
-          ]
-        },
-        "name": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        },
-        "target_gender": {
-          "type": "integer",
-          "enum": [
-            1,
-            2,
-            3
-          ]
-        }
-      }
-    },
-    "handlers.StatusResponse": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        }
-      }
-    },
-    "handlers.UpdateUserRequest": {
-      "type": "object",
-      "properties": {
-        "avatar_url": {
-          "type": "string"
-        },
-        "bio": {
-          "type": "string"
-        },
-        "birth_date": {
-          "description": "Remains a *string in \"YYYY-MM-DD\" format",
-          "type": "string"
-        },
-        "gender": {
-          "type": "integer",
-          "enum": [
-            1,
-            2,
-            3
-          ]
-        },
-        "intention": {
-          "description": "Dating intention",
-          "type": "string",
-          "enum": [
-            "long_term_partner",
-            "long_term_open_to_short",
-            "short_term_open_to_long",
-            "short_term_fun",
-            "new_friends",
-            "still_figuring_out"
-          ]
-        },
-        "name": {
-          "type": "string"
-        },
-        "target_gender": {
-          "type": "integer",
-          "enum": [
-            1,
-            2,
-            3
-          ]
-        }
-      }
-    },
-    "models.User": {
-      "type": "object",
-      "properties": {
-        "avatar_url": {
-          "type": "string"
-        },
-        "bio": {
-          "type": "string"
-        },
-        "birth_date": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "email": {
-          "type": "string"
-        },
-        "gender": {
-          "type": "integer",
-          "enum": [
-            1,
-            2,
-            3
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "intention": {
-          "type": "string",
-          "enum": [
-            "long_term_partner",
-            "long_term_open_to_short",
-            "short_term_open_to_long",
-            "short_term_fun",
-            "new_friends",
-            "still_figuring_out"
-          ]
-        },
-        "name": {
-          "type": "string"
-        },
-        "target_gender": {
-          "type": "integer",
-          "enum": [
-            1,
-            2,
-            3
-          ]
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      }
-    }
-  }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
