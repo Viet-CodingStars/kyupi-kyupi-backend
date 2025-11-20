@@ -178,3 +178,106 @@ func (r *UserRepo) Update(user *models.User) error {
   }
   return err
 }
+
+// GetUsers retrieves a paginated list of users with cursor-based pagination
+func (r *UserRepo) GetUsers(cursor *uuid.UUID, limit int) ([]*models.User, error) {
+  var query string
+  var args []interface{}
+
+  if cursor != nil {
+    query = `
+      SELECT id, name, gender, avatar_url, intention
+      FROM users
+      WHERE id > $1
+      ORDER BY id
+      LIMIT $2
+    `
+    args = []interface{}{cursor, limit}
+  } else {
+    query = `
+      SELECT id, name, gender, avatar_url, intention
+      FROM users
+      ORDER BY id
+      LIMIT $1
+    `
+    args = []interface{}{limit}
+  }
+
+  rows, err := r.db.Query(query, args...)
+  if err != nil {
+    return nil, err
+  }
+  defer rows.Close()
+
+  users := make([]*models.User, 0)
+  for rows.Next() {
+    user := &models.User{}
+    var avatarURL sql.NullString
+    var intention sql.NullString
+
+    err := rows.Scan(&user.ID, &user.Name, &user.Gender, &avatarURL, &intention)
+    if err != nil {
+      return nil, err
+    }
+
+    if avatarURL.Valid {
+      user.AvatarURL = avatarURL.String
+    }
+    if intention.Valid {
+      user.Intention = intention.String
+    } else {
+      user.Intention = models.DefaultIntention()
+    }
+
+    users = append(users, user)
+  }
+
+  if err = rows.Err(); err != nil {
+    return nil, err
+  }
+
+  return users, nil
+}
+
+// GetUserDetail retrieves detailed information about a user by ID
+func (r *UserRepo) GetUserDetail(id uuid.UUID) (*models.User, error) {
+  query := `
+    SELECT id, name, gender, target_gender, intention, bio, avatar_url, created_at, updated_at
+    FROM users WHERE id = $1
+  `
+  user := &models.User{}
+
+  var targetGender sql.NullInt64
+  var intention sql.NullString
+  var bio sql.NullString
+  var avatarURL sql.NullString
+
+  err := r.db.QueryRow(query, id).Scan(
+    &user.ID, &user.Name, &user.Gender, &targetGender, &intention,
+    &bio, &avatarURL, &user.CreatedAt, &user.UpdatedAt,
+  )
+  if err == sql.ErrNoRows {
+    return nil, ErrUserNotFound
+  }
+  if err != nil {
+    return nil, err
+  }
+
+  if targetGender.Valid {
+    val := int(targetGender.Int64)
+    user.TargetGender = &val
+  }
+  if intention.Valid {
+    user.Intention = intention.String
+  } else {
+    user.Intention = models.DefaultIntention()
+  }
+  if bio.Valid {
+    user.Bio = bio.String
+  }
+  if avatarURL.Valid {
+    user.AvatarURL = avatarURL.String
+  }
+
+  return user, nil
+}
