@@ -31,6 +31,15 @@ definitions:
       error:
         type: string
     type: object
+  handlers.GetUsersResponse:
+    properties:
+      next_cursor:
+        type: string
+      users:
+        items:
+          $ref: '#/definitions/handlers.UserListItem'
+        type: array
+    type: object
   handlers.LikeResponse:
     properties:
       like:
@@ -119,6 +128,40 @@ definitions:
         type: string
       target_gender:
         type: integer
+    type: object
+  handlers.UserDetail:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      gender:
+        type: integer
+      id:
+        type: string
+      intention:
+        type: string
+      name:
+        type: string
+      target_gender:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  handlers.UserListItem:
+    properties:
+      avatar_url:
+        type: string
+      gender:
+        type: integer
+      id:
+        type: string
+      intention:
+        type: string
+      name:
+        type: string
     type: object
   models.Like:
     properties:
@@ -395,6 +438,36 @@ paths:
       tags:
       - Passes
   /api/users:
+    get:
+      description: Returns a paginated list of users with minimal information for
+        swipe screen.
+      parameters:
+      - description: Cursor for pagination (UUID)
+        in: query
+        name: cursor
+        type: string
+      - description: 'Number of users to return (default: 20, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.GetUsersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get list of users
+      tags:
+      - Users
     post:
       consumes:
       - application/json
@@ -428,6 +501,37 @@ paths:
       summary: Register a new user
       tags:
       - Auth
+  /api/users/{user_id}/detail:
+    get:
+      description: Returns detailed information about a specific user.
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.UserDetail'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get user detail
+      tags:
+      - Users
   /api/users/profile:
     get:
       description: Returns the authenticated user's profile details.

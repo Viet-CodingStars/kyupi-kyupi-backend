@@ -60,6 +60,8 @@ func NewRouter(db *sql.DB, cfg *config.Config, avatarStorage storage.AvatarStora
 	{
 		api.POST("/users", userHandler.SignUp)
 		api.POST("/users/sign_in", userHandler.SignIn)
+		api.GET("/users", userHandler.GetUsers)
+		api.GET("/users/:user_id/detail", userHandler.GetUserDetail)
 
 		users := api.Group("/users")
 		users.Use(authMw)

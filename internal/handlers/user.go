@@ -21,6 +21,8 @@ type UserRepository interface {
   GetByEmail(email string) (*models.User, error)
   GetByID(id uuid.UUID) (*models.User, error)
   Update(user *models.User) error
+  GetUsers(cursor *uuid.UUID, limit int) ([]*models.User, error)
+  GetUserDetail(id uuid.UUID) (*models.User, error)
 }
 
 type UserHandler struct {
@@ -79,6 +81,34 @@ type UpdateUserRequest struct {
   AvatarURL    *string `json:"avatar_url,omitempty"`
   TargetGender *int    `json:"target_gender,omitempty"`
   Intention    *string `json:"intention,omitempty"`
+}
+
+// UserListItem represents a minimal user item in the list response
+type UserListItem struct {
+  ID        uuid.UUID `json:"id"`
+  Name      string    `json:"name"`
+  Gender    int       `json:"gender"`
+  AvatarURL string    `json:"avatar_url"`
+  Intention string    `json:"intention"`
+}
+
+// GetUsersResponse represents the response for the user list endpoint
+type GetUsersResponse struct {
+  Users      []UserListItem `json:"users"`
+  NextCursor *uuid.UUID     `json:"next_cursor"`
+}
+
+// UserDetail represents detailed user information
+type UserDetail struct {
+  ID           uuid.UUID  `json:"id"`
+  Name         string     `json:"name"`
+  Gender       int        `json:"gender"`
+  TargetGender *int       `json:"target_gender,omitempty"`
+  Intention    string     `json:"intention"`
+  Bio          string     `json:"bio,omitempty"`
+  AvatarURL    string     `json:"avatar_url,omitempty"`
+  CreatedAt    time.Time  `json:"created_at"`
+  UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 // validateGender checks if the provided gender matches the supported enum values.
@@ -429,4 +459,113 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
   }
 
   c.JSON(http.StatusOK, user)
+}
+
+// GetUsers returns a paginated list of users (GET /api/users).
+// @Summary Get list of users
+// @Description Returns a paginated list of users with minimal information for swipe screen.
+// @Tags Users
+// @Produce json
+// @Param cursor query string false "Cursor for pagination (UUID)"
+// @Param limit query int false "Number of users to return (default: 20, max: 100)"
+// @Success 200 {object} GetUsersResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/users [get]
+func (h *UserHandler) GetUsers(c *gin.Context) {
+  // Parse cursor parameter
+  var cursor *uuid.UUID
+  if cursorStr := c.Query("cursor"); cursorStr != "" {
+    cursorUUID, err := uuid.Parse(cursorStr)
+    if err != nil {
+      c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid cursor format"})
+      return
+    }
+    cursor = &cursorUUID
+  }
+
+  // Parse limit parameter with default of 20
+  limit := 20
+  if limitStr := c.Query("limit"); limitStr != "" {
+    fmt.Sscanf(limitStr, "%d", &limit)
+    if limit < 1 || limit > 100 {
+      c.JSON(http.StatusBadRequest, ErrorResponse{Error: "limit must be between 1 and 100"})
+      return
+    }
+  }
+
+  // Get users from repository
+  users, err := h.userRepo.GetUsers(cursor, limit)
+  if err != nil {
+    c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to retrieve users"})
+    return
+  }
+
+  // Convert to response format
+  userItems := make([]UserListItem, len(users))
+  for i, user := range users {
+    userItems[i] = UserListItem{
+      ID:        user.ID,
+      Name:      user.Name,
+      Gender:    user.Gender,
+      AvatarURL: user.AvatarURL,
+      Intention: user.Intention,
+    }
+  }
+
+  // Determine next cursor
+  var nextCursor *uuid.UUID
+  if len(users) == limit {
+    lastID := users[len(users)-1].ID
+    nextCursor = &lastID
+  }
+
+  c.JSON(http.StatusOK, GetUsersResponse{
+    Users:      userItems,
+    NextCursor: nextCursor,
+  })
+}
+
+// GetUserDetail returns detailed information about a specific user (GET /api/users/:user_id/detail).
+// @Summary Get user detail
+// @Description Returns detailed information about a specific user.
+// @Tags Users
+// @Produce json
+// @Param user_id path string true "User ID (UUID)"
+// @Success 200 {object} UserDetail
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/users/{user_id}/detail [get]
+func (h *UserHandler) GetUserDetail(c *gin.Context) {
+  userIDStr := c.Param("user_id")
+  userID, err := uuid.Parse(userIDStr)
+  if err != nil {
+    c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid user ID format"})
+    return
+  }
+
+  user, err := h.userRepo.GetUserDetail(userID)
+  if err != nil {
+    if err == repo.ErrUserNotFound {
+      c.JSON(http.StatusNotFound, ErrorResponse{Error: "user not found"})
+      return
+    }
+    c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to retrieve user detail"})
+    return
+  }
+
+  detail := UserDetail{
+    ID:           user.ID,
+    Name:         user.Name,
+    Gender:       user.Gender,
+    TargetGender: user.TargetGender,
+    Intention:    user.Intention,
+    Bio:          user.Bio,
+    AvatarURL:    user.AvatarURL,
+    CreatedAt:    user.CreatedAt,
+    UpdatedAt:    user.UpdatedAt,
+  }
+
+  c.JSON(http.StatusOK, detail)
 }
